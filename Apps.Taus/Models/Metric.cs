@@ -8,8 +8,8 @@ namespace Apps.Taus.Models
 {
     public class Metric
     {
-        public string uid { get; set; }
-        public float value { get; set; }
-        public string version { get; set; }
+        public string Uid { get; set; }
+        public float Value { get; set; }
+        public string Version { get; set; }
     }
 }

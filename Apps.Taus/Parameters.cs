@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Apps.Taus.Requests
+namespace Apps.Taus
 {
-    public class BlackbirdRequest
+    public class Parameters
     {
         public string Source { get; set; }
         public string SourceLanguage { get; set; }

@@ -1,9 +1,7 @@
 ﻿using Apps.Taus.Models;
-using Apps.Taus.Requests;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Authentication;
-using System.Text;
-using System.Text.Json;
+using RestSharp;
 
 namespace Apps.Taus
 {
@@ -12,31 +10,18 @@ namespace Apps.Taus
     {
 
         [Action]
-        public Metric Estimate(AuthenticationCredentialsProvider authenticationCredentialsProvider, [ActionParameter] BlackbirdRequest estimationRequest)
+        public Metric Estimate(AuthenticationCredentialsProvider authenticationCredentialsProvider, [ActionParameter] Parameters parameters)
         {
-            var tausRequest = new EstimationRequest
+            var client = new RestClient("https://api.sandbox.taus.net");
+            var request = new RestRequest("/1.0/estimate", Method.Post);
+            request.AddHeader("api-key", authenticationCredentialsProvider.Value);
+            request.AddJsonBody(new EstimationRequest
             {
-                source = new Segment { value = estimationRequest.Source, language = estimationRequest.SourceLanguage },
-                targets = new List<Segment>() { new Segment { value = estimationRequest.Target, language = estimationRequest.TargetLanguage } }
-            };
+                Source = new Segment { Value = parameters.Source, Language = parameters.SourceLanguage },
+                Targets = new List<Segment>() { new Segment { Value = parameters.Target, Language = parameters.TargetLanguage } }
+            });
 
-            var json = JsonSerializer.Serialize(tausRequest);
-
-            var httpClient = new HttpClient();
-            var httpRequest = new HttpRequestMessage()
-            {
-                RequestUri = new Uri("https://api.sandbox.taus.net/1.0/estimate"),
-                Method = HttpMethod.Post
-            };            
-
-            httpRequest.Headers.Add("api-key", authenticationCredentialsProvider.Value);
-            httpRequest.Content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var response = httpClient.Send(httpRequest);
-            var responseString = Task.Run(async () => await response.Content.ReadAsStringAsync()).Result;
-            var result = JsonSerializer.Deserialize<EstimationResponse>(responseString);
-
-            return result.estimates.First().metrics.First();
+            return client.Post<EstimationResponse>(request).Estimates.First().Metrics.First();
         }
     }
 }

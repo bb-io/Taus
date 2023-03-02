@@ -8,7 +8,7 @@ namespace Apps.Taus.Models
 {
     public class EstimationResponse
     {
-        public Segment source { get; set; }
-        public List<Estimate> estimates { get; set; }
+        public Segment Source { get; set; }
+        public List<Estimate> Estimates { get; set; }
     }
 }

@@ -8,7 +8,7 @@ namespace Apps.Taus.Models
 {
     public class Segment
     {
-        public string value { get; set; }
-        public string language { get; set; }
+        public string Value { get; set; }
+        public string Language { get; set; }
     }
 }
