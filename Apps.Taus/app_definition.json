@@ -1,0 +1,11 @@
+﻿{
+  "communicationWrapperType": "HttpWrapper",
+  "authenticationType": "",
+  "definition": [
+    {
+      "name": "apiKey",
+      "description": "The apiKey for authorization"
+    }
+  ],
+  "authenticationResponseMapping": {}
+}

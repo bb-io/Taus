@@ -8,7 +8,6 @@ namespace Apps.Taus
     [ActionList]
     public class Actions
     {
-
         [Action]
         public Metric Estimate(AuthenticationCredentialsProvider authenticationCredentialsProvider, [ActionParameter] Parameters parameters)
         {
