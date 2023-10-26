@@ -4,6 +4,10 @@
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Product>Blackbird TAUS Quality Estimation</Product>
+    <Version>1.0.0</Version>
+    <Description>Provides real-time MT quality scores.</Description>
+    <AssemblyName>Apps.Taus</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
