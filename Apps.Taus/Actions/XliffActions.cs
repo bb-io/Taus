@@ -20,59 +20,60 @@ using System.Text.RegularExpressions;
 
 namespace Apps.Taus.Actions;
 
-    public class XliffActions : TausInvocable
+[ActionList]
+public class XliffActions : TausInvocable
+{
+    private readonly IFileManagementClient _fileManagementClient;
+    public XliffActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : base(
+       invocationContext)
     {
-        private readonly IFileManagementClient _fileManagementClient;
-        public XliffActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : base(
-           invocationContext)
+        _fileManagementClient = fileManagementClient;
+    }
+
+    [Action("Estimate XLIFF", Description = "Get estimation data for a segment")]
+    public async Task<XliffResponse> EstimateXliff([ActionParameter] EstimateXliffInput Input)
+    {
+        var _file = await _fileManagementClient.DownloadAsync(Input.File);
+
+        var transunits = ExtractSegmentsFromXliff(_file);
+
+        var results = new Dictionary<string, float>();
+
+        var file = await _fileManagementClient.DownloadAsync(Input.File);
+        string fileContent;
+        Encoding encoding;
+        using (var inFileStream = new StreamReader(file, true))
         {
-            _fileManagementClient = fileManagementClient;
+            encoding = inFileStream.CurrentEncoding;
+            fileContent = inFileStream.ReadToEnd();
         }
 
-        [Action("Estimate XLIFF", Description = "Get estimation data for a segment")]
-        public async Task<XliffResponse> EstimateXliff([ActionParameter] EstimateXliffInput Input)
+        foreach (var transunit in transunits)
         {
-            var _file = await _fileManagementClient.DownloadAsync(Input.File);
-
-            var transunits = ExtractSegmentsFromXliff(_file);
-
-            var results = new Dictionary<string, float>();
-
-            var file = await _fileManagementClient.DownloadAsync(Input.File);
-            string fileContent;
-            Encoding encoding;
-            using (var inFileStream = new StreamReader(file, true))
+            var request = new TausRequest(ApiEndpoints.Estimate, Method.Post, Creds)
+            .AddJsonBody(new EstimationRequest
             {
-                encoding = inFileStream.CurrentEncoding;
-                fileContent = inFileStream.ReadToEnd();
-            }
-
-            foreach (var transunit in transunits) 
-            {
-                var request = new TausRequest(ApiEndpoints.Estimate, Method.Post, Creds)
-                .AddJsonBody(new EstimationRequest
+                Source = new()
                 {
-                    Source = new()
-                    {
-                        Value = transunit.Source,
-                        Language = Input.SourceLang,
-                        Label = ""
-                    },
-                    Targets = new()
-                    {
+                    Value = transunit.Source,
+                    Language = Input.SourceLang,
+                    Label = ""
+                },
+                Targets = new()
+                {
                     new()
                     {
                         Value = transunit.Target,
                         Language = Input.TargetLang,
                         Label = ""
                     }
-                    }
-                });
+                }
+            });
 
             var response = await Client.ExecuteWithErrorHandling<EstimationResponse>(request);
-            results.Add(transunit.ID ,response.Estimates.First().Metrics.First().Value);
+            results.Add(transunit.ID, response.Estimates.First().Metrics.First().Value);
 
-            fileContent = Regex.Replace(fileContent, @"(<trans-unit id="""+ transunit.ID + @""")", @"${1} extradata="""+ response.Estimates.First().Metrics.First().Value + @"""");
+            fileContent = Regex.Replace(fileContent, @"(<trans-unit id=""" + transunit.ID + @""")", @"${1} extradata=""" + response.Estimates.First().Metrics.First().Value + @"""");
 
         }
 
@@ -104,7 +105,7 @@ namespace Apps.Taus.Actions;
 
 }
 
-    
+
 
 
 
