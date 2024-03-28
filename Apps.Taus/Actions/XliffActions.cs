@@ -30,7 +30,7 @@ public class XliffActions : TausInvocable
         _fileManagementClient = fileManagementClient;
     }
 
-    [Action("Estimate XLIFF", Description = "Get estimation data for a segment")]
+    [Action("Estimate XLIFF", Description = "Gets quality estimation data for all segments in an XLIFF 1.2 file")]
     public async Task<XliffResponse> EstimateXliff([ActionParameter] EstimateXliffInput Input)
     {
         var _file = await _fileManagementClient.DownloadAsync(Input.File);
