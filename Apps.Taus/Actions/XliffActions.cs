@@ -74,8 +74,34 @@ public class XliffActions : TausInvocable
             results.Add(transunit.ID, response.Estimates.First().Metrics.First().Value);
 
             fileContent = Regex.Replace(fileContent, @"(<trans-unit id=""" + transunit.ID + @""")", @"${1} extradata=""" + response.Estimates.First().Metrics.First().Value + @"""");
-
+            
         }
+        
+        if (Input.Threshold != null && Input.Condition != null && Input.State != null)
+        {
+            var filteredTUs = new List<string>();
+            switch (Input.Condition) 
+            {
+                case ">":
+                    filteredTUs = results.Where(x => x.Value > Input.Threshold).Select(x => x.Key).ToList();
+                    break;
+                case ">=":
+                    filteredTUs = results.Where(x => x.Value >= Input.Threshold).Select(x => x.Key).ToList();
+                    break;
+                case "=":
+                    filteredTUs = results.Where(x => x.Value == Input.Threshold).Select(x => x.Key).ToList();
+                    break;
+                case "<":
+                    filteredTUs = results.Where(x => x.Value < Input.Threshold).Select(x => x.Key).ToList();
+                    break;
+                case "<=":
+                    filteredTUs = results.Where(x => x.Value <= Input.Threshold).Select(x => x.Key).ToList();
+                    break;
+            }
+
+            fileContent = UpdateTargetState(fileContent, Input.State, filteredTUs);
+        }
+         
 
         return new XliffResponse
         {
@@ -83,6 +109,20 @@ public class XliffActions : TausInvocable
             File = await _fileManagementClient.UploadAsync(new MemoryStream(encoding.GetBytes(fileContent)), MediaTypeNames.Text.Xml, Input.File.Name)
         };
     }
+
+    private string UpdateTargetState(string fileContent, string state, List<string> filteredTUs)
+    {
+        var tus = Regex.Matches(fileContent, @"<trans-unit[\s\S]+?</trans-unit>").Select(x => x.Value);
+        foreach (var tu in tus.Where(x => filteredTUs.Any(y => y == Regex.Match(x, @"<trans-unit id=""(\d+)""").Groups[1].Value)))
+        {
+            string transformedTU = Regex.IsMatch(tu, @"<target(.*?)state=""(.*?)""(.*?)>") ? 
+                Regex.Replace(tu, @"<target(.*?state="")(.*?)("".*?)>",@"<target${1}"+state+"${3}>")
+                : Regex.Replace(tu,"<target",@"<target state="""+state+@"""");
+            fileContent = Regex.Replace(fileContent,Regex.Escape(tu),transformedTU);
+        }
+        return fileContent;
+    }
+
     public List<TranslationUnit> ExtractSegmentsFromXliff(Stream inputStream)
     {
         var TUs = new List<TranslationUnit>();
