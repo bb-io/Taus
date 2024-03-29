@@ -1,16 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Product>TAUS Quality Estimation</Product>
-    <Version>1.0.2</Version>
+    <Version>1.0.6</Version>
     <Description>Provides real-time MT quality scores.</Description>
     <AssemblyName>Apps.Taus</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Blackbird.Applications.Sdk.Common" Version="2.2.0-alpha3" />
-    <PackageReference Include="Blackbird.Applications.Sdk.Utils" Version="1.0.12" />
+    <PackageReference Include="Blackbird.Applications.Sdk.Common" Version="2.5.0" />
+    <PackageReference Include="Blackbird.Applications.SDK.Extensions.FileManagement" Version="1.0.1" />
+    <PackageReference Include="Blackbird.Applications.Sdk.Utils" Version="1.0.25" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource CopyToOutputDirectory="Always" Include="image\icon.png"></EmbeddedResource>
