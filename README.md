@@ -6,7 +6,56 @@ Blackbird is the new automation backbone for the language technology industry. B
 
 <!-- begin docs -->
 
-Documentation coming soon.
+TAUS Quality Estimate by Language Data Network helps users assess the quality of machine-translated content and make informed decisions about its suitability for various purposes.
+
+## Before setting up
+
+Before you can connect you need to make sure that:
+
+- You have a TAUS account.
+- You have an API key corresponding to your TAUS account.
+
+## Connecting
+
+1. Navigate to apps and search for TAUS. If you cannot find TAUS then click _Add App_ in the top right corner, select TAUS and add the app to your Blackbird environment.
+2. Click _Add Connection_.
+3. Name your connection for future reference e.g. 'My TAUS connection'.
+4. Fill in the API key for your TAUS account.
+7. Click _Connect_.
+
+![TAUSBlackbirdConnection](image/README/TAUSBlackbirdConnection.png)
+
+## Actions
+
+### Segments
+
+- **Estimate** Gets quality estimation data for a single segment specifying:
+    - Source text
+    - Source language
+    - Target text
+    - Target language
+    - 
+Supported languages can be found [here](https://developer.taus.net/). TAUS' sandbox environment only supports :
+
+- English (en)
+- French (fr)
+- German (de)
+- Italian (it)
+- Spanish (es)
+
+### XLIFF files
+
+- **Estimate XLIFF** Gets quality estimation data for all segments in an XLIFF 1.2 file. Mandatory input data include the translated XLIFF file, source and target language values. As an output, an Average Score is provided, which is the average of the quality scores for all segments in the file. Additionally, all translation units get appeneded with their individual score which is added to the `extradata` attribute in the XLIFF file. Optionally, you can add Threshold, New Target State and Condition input parameters to the Blackbird action to change the target state value of segments meeting the desired criteria.
+
+Examples:
+
+Setting the optional input values as shown in the image below will result in all segments with a score above 0.9 to have their target state values updated to "final".
+
+![TAUSoptionalinput1](image/README/TAUSoptionalinput1.png)
+
+Similarly, the setup below will cause all the segments with a quality score below or equal to 0.6 to have their target state value changed to "needs-review-translation".
+
+![TAUSoptionalinput2](image/README/TAUSoptionalinput2.png)
 
 ## Feedback
 
