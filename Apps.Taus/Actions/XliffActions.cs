@@ -109,9 +109,6 @@ public class XliffActions : TausInvocable
             File = await _fileManagementClient.UploadAsync(new MemoryStream(encoding.GetBytes(fileContent)), MediaTypeNames.Text.Xml, Input.File.Name)
         };
     }
-<<<<<<< HEAD
-    
-=======
 
     private string UpdateTargetState(string fileContent, string state, List<string> filteredTUs)
     {
@@ -126,7 +123,6 @@ public class XliffActions : TausInvocable
         return fileContent;
     }
 
->>>>>>> 64687a2c3f1db3c8658384a01ff1225844949ecb
     public List<TranslationUnit> ExtractSegmentsFromXliff(Stream inputStream)
     {
         var TUs = new List<TranslationUnit>();
