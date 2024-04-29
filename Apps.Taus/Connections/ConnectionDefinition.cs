@@ -15,7 +15,7 @@ public class ConnectionDefinition : IConnectionDefinition
             ConnectionUsage = ConnectionUsage.Actions,
             ConnectionProperties = new List<ConnectionProperty>()
             {
-                new(CredsNames.Url) {DisplayName = "Base URL" },
+                new(CredsNames.Url) {DisplayName = "Base URL", Description = "Either https://api.taus.net or https://api.sandbox.taus.net" },
                 new(CredsNames.ApiKey) { DisplayName = "API key", Sensitive = true }
             }
         }
