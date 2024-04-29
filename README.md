@@ -13,15 +13,16 @@ TAUS Quality Estimate by Language Data Network helps users assess the quality of
 Before you can connect you need to make sure that:
 
 - You have a TAUS account.
-- You have an API key corresponding to your TAUS account.
+- You have an API key corresponding to your TAUS account. You can find API keys [here](https://www.taus.net/user/services)
 
 ## Connecting
 
-1. Navigate to apps and search for TAUS. If you cannot find TAUS then click _Add App_ in the top right corner, select TAUS and add the app to your Blackbird environment.
+1. Navigate to apps and search for TAUS.
 2. Click _Add Connection_.
 3. Name your connection for future reference e.g. 'My TAUS connection'.
-4. Fill in the API key for your TAUS account.
-7. Click _Connect_.
+4. Fill in the Base URL for your TAUS connection. This is most likely either `https://api.taus.net` or `https://api.sandbox.taus.net`
+5. Fill in the API key for your TAUS account.
+6. Click _Connect_.
 
 ![TAUSBlackbirdConnection](image/README/TAUSBlackbirdConnection.png)
 
@@ -29,13 +30,8 @@ Before you can connect you need to make sure that:
 
 ### Segments
 
-- **Estimate** Gets quality estimation data for a single segment specifying:
-    - Source text
-    - Source language
-    - Target text
-    - Target language
-    - 
-Supported languages can be found [here](https://developer.taus.net/). TAUS' sandbox environment only supports :
+- **Estimate** Gets quality estimation data for a single segment specifying: - Source text - Source language - Target text - Target language -
+  Supported languages can be found [here](https://developer.taus.net/). TAUS' sandbox environment only supports :
 
 - English (en)
 - French (fr)

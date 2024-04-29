@@ -10,11 +10,11 @@ namespace Apps.Taus.Connections;
 
 public class ConnectionValidator : IConnectionValidator
 {
-    private TausClient Client => new();
 
     public async ValueTask<ConnectionValidationResponse> ValidateConnection(
         IEnumerable<AuthenticationCredentialsProvider> authProviders, CancellationToken cancellationToken)
     {
+        var client = new TausClient(authProviders);
         var request = new TausRequest(ApiEndpoints.Estimate, Method.Post, authProviders)
             .AddJsonBody(new EstimationRequest
             {
@@ -35,7 +35,7 @@ public class ConnectionValidator : IConnectionValidator
 
         try
         {
-            await Client.ExecuteWithErrorHandling<EstimationResponse>(request);
+            await client.ExecuteWithErrorHandling<EstimationResponse>(request);
 
             return new()
             {

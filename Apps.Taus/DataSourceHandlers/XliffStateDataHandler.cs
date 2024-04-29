@@ -1,4 +1,5 @@
-﻿using Blackbird.Applications.Sdk.Utils.Sdk.DataSourceHandlers;
+﻿using Blackbird.Applications.Sdk.Common.Dictionaries;
+using Blackbird.Applications.Sdk.Utils.Sdk.DataSourceHandlers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,9 +8,9 @@ using System.Threading.Tasks;
 
 namespace Apps.Taus.DataSourceHandlers
 {
-    public class XliffStateDataHandler : EnumDataHandler
+    public class XliffStateDataHandler : IStaticDataSourceHandler
     {
-            protected override Dictionary<string, string> EnumValues => new()
+        protected Dictionary<string, string> EnumValues => new()
         {
             { "final", "final" },
             { "needs-adaptation", "needs-adaptation" },
@@ -22,5 +23,10 @@ namespace Apps.Taus.DataSourceHandlers
             { "signed-off", "signed-off" },
             { "translated", "translated"}
         };
+
+        public Dictionary<string, string> GetData()
+        {
+            return EnumValues;
+        }
     }
 }
