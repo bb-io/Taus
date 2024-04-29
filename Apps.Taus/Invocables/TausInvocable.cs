@@ -14,6 +14,6 @@ public class TausInvocable : BaseInvocable
 
     public TausInvocable(InvocationContext invocationContext) : base(invocationContext)
     {
-        Client = new();
+        Client = new(Creds);
     }
 }

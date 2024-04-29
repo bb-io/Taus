@@ -1,5 +1,7 @@
 ﻿using Apps.Taus.Constants;
 using Apps.Taus.Models.Response.Error;
+using Blackbird.Applications.Sdk.Common.Authentication;
+using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
 using Blackbird.Applications.Sdk.Utils.Extensions.String;
 using Blackbird.Applications.Sdk.Utils.RestSharp;
 using Newtonsoft.Json;
@@ -9,9 +11,9 @@ namespace Apps.Taus.Api;
 
 public class TausClient : BlackBirdRestClient
 {
-    public TausClient() : base(new RestClientOptions()
+    public TausClient(IEnumerable<AuthenticationCredentialsProvider> creds) : base(new RestClientOptions()
     {
-        BaseUrl = Urls.Api.ToUri()
+        BaseUrl = creds.Get(CredsNames.Url).Value.ToUri()
     })
     {
     }

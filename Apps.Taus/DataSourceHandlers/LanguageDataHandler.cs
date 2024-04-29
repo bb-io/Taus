@@ -1,10 +1,11 @@
-﻿using Blackbird.Applications.Sdk.Utils.Sdk.DataSourceHandlers;
+﻿using Blackbird.Applications.Sdk.Common.Dictionaries;
+using Blackbird.Applications.Sdk.Utils.Sdk.DataSourceHandlers;
 
 namespace Apps.Taus.DataSourceHandlers;
 
-public class LanguageDataHandler : EnumDataHandler
+public class LanguageDataHandler : IStaticDataSourceHandler
 {
-    protected override Dictionary<string, string> EnumValues => new()
+    protected Dictionary<string, string> EnumValues => new()
     {
         {"af", "Afrikaans" },
         {"sq", "Albanian" },
@@ -116,4 +117,9 @@ public class LanguageDataHandler : EnumDataHandler
         {"yo", "Yoruba" },
         {"zu", "Zulu" }
     };
+
+    public Dictionary<string, string> GetData()
+    {
+        return EnumValues;
+    }
 }
