@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Apps.Taus.DataSourceHandlers;
 using Blackbird.Applications.Sdk.Common.Dynamic;
+using Blackbird.Applications.Sdk.Common.Dictionaries;
 
 namespace Apps.Taus.Models.Request
 {
@@ -15,20 +16,20 @@ namespace Apps.Taus.Models.Request
         public FileReference File { get; set; }
 
         [Display("Source Language")]
-        [DataSource(typeof(LanguageDataHandler))]
+        [StaticDataSource(typeof(LanguageDataHandler))]
         public string SourceLang { get; set; }
 
         [Display("Target Language")]
-        [DataSource(typeof(LanguageDataHandler))]
+        [StaticDataSource(typeof(LanguageDataHandler))]
         public string TargetLang { get; set; }
 
         public float? Threshold { get; set; }
 
-        [DataSource(typeof(ConditionDataHandler))]
+        [StaticDataSource(typeof(ConditionDataHandler))]
         public string? Condition { get; set; }
 
         [Display("New Target State")]
-        [DataSource(typeof(XliffStateDataHandler))]
+        [StaticDataSource(typeof(XliffStateDataHandler))]
         public string? State { get;set; }
 
     }
