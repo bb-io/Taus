@@ -24,7 +24,7 @@ Before you can connect you need to make sure that:
 5. Fill in the API key for your TAUS account.
 6. Click _Connect_.
 
-![TAUSBlackbirdConnection](image/README/TAUSBlackbirdConnection.png)
+![TAUSBlackbirdConnection](image/README/1714471684106.png)
 
 ## Actions
 
