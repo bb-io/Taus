@@ -1,32 +1,25 @@
 ﻿using Blackbird.Applications.Sdk.Common.Dictionaries;
-using Blackbird.Applications.Sdk.Utils.Sdk.DataSourceHandlers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.Taus.DataSourceHandlers
 {
-    public class XliffStateDataHandler : IStaticDataSourceHandler
+    public class XliffStateDataHandler : IStaticDataSourceItemHandler
     {
-        protected Dictionary<string, string> EnumValues => new()
+        public IEnumerable<DataSourceItem> GetData()
         {
-            { "final", "final" },
-            { "needs-adaptation", "needs-adaptation" },
-            { "needs-l10n", "needs-l10n" },
-            { "needs-review-adaptation", "needs-review-adaptation" },
-            { "needs-review-l10n", "needs-review-l10n" },
-            { "needs-review-translation", "needs-review-translation" },
-            { "needs-translation", "needs-translation" },
-            { "new", "new" },
-            { "signed-off", "signed-off" },
-            { "translated", "translated"}
-        };
-
-        public Dictionary<string, string> GetData()
-        {
-            return EnumValues;
+            return new List<DataSourceItem>()
+            {
+                new DataSourceItem( "final", "final" ),
+                new DataSourceItem( "needs-adaptation", "needs-adaptation" ),
+                new DataSourceItem( "needs-l10n", "needs-l10n" ),
+                new DataSourceItem( "needs-review-adaptation", "needs-review-adaptation" ),
+                new DataSourceItem( "needs-review-l10n", "needs-review-l10n" ),
+                new DataSourceItem( "needs-review-translation", "needs-review-translation" ),
+                new DataSourceItem( "needs-translation", "needs-translation" ),
+                new DataSourceItem( "new", "new" ),
+                new DataSourceItem( "signed-off", "signed-off" ),
+                new DataSourceItem( "translated", "translated"),
+            };
         }
     }
 }

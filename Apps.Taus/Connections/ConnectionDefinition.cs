@@ -12,11 +12,19 @@ public class ConnectionDefinition : IConnectionDefinition
         {
             Name = "Developer API key",
             AuthenticationType = ConnectionAuthenticationType.Undefined,
-            ConnectionUsage = ConnectionUsage.Actions,
             ConnectionProperties = new List<ConnectionProperty>()
             {
-                new(CredsNames.Url) {DisplayName = "Base URL", Description = "Either https://api.taus.net or https://api.sandbox.taus.net" },
-                new(CredsNames.ApiKey) { DisplayName = "API key", Sensitive = true }
+                new(CredsNames.Url) 
+                {
+                    DisplayName = "Environment", 
+                    Description = "Production or sandbox",
+                    DataItems = [new ("https://api.taus.net", "Production"), new ("https://api.sandbox.taus.net", "Sandbox")]
+                },
+                new(CredsNames.ApiKey) 
+                { 
+                    DisplayName = "API key", 
+                    Sensitive = true 
+                }
             }
         }
     };
@@ -25,13 +33,11 @@ public class ConnectionDefinition : IConnectionDefinition
         Dictionary<string, string> values)
     {
         yield return new(
-            AuthenticationCredentialsRequestLocation.None,
             CredsNames.Url,
             values[CredsNames.Url]
         );
 
         yield return new(
-            AuthenticationCredentialsRequestLocation.None,
             CredsNames.ApiKey,
             values[CredsNames.ApiKey]
         );

@@ -1,28 +1,20 @@
 ﻿using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Dynamic;
-using Blackbird.Applications.Sdk.Utils.Sdk.DataSourceHandlers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Apps.Taus.DataSourceHandlers
 {
-    public class ConditionDataHandler : IStaticDataSourceHandler
+    public class ConditionDataHandler : IStaticDataSourceItemHandler
     {
-        protected Dictionary<string, string> EnumValues => new()
+        public IEnumerable<DataSourceItem> GetData()
         {
-            { ">", "Score is above threshold" },
-            { ">=", "Score is above or equal threshold" },
-            { "=", "Score is same as threshold" },
-            { "<", "Score is below threshold" },
-            { "<=", "Score is below or equal threshold" }
-        };
-
-        public Dictionary<string, string> GetData()
-        {
-            return EnumValues;
+            return new List<DataSourceItem>()
+            {
+                new DataSourceItem(">", "Score is above threshold" ),
+                new DataSourceItem(">=", "Score is above or equal threshold" ),
+                new DataSourceItem("=", "Score is same as threshold" ),
+                new DataSourceItem("<", "Score is below threshold" ),
+                new DataSourceItem("<=", "Score is below or equal threshold"),
+            };
         }
     }
 }

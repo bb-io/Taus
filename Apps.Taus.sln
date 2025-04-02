@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.33414.496
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apps.Taus", "Apps.Taus\Apps.Taus.csproj", "{75285139-6C02-4B4A-B612-C73CF969F3A7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Apps.Taus", "Apps.Taus\Apps.Taus.csproj", "{75285139-6C02-4B4A-B612-C73CF969F3A7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests.Taus", "Tests.Taus\Tests.Taus.csproj", "{EF80AEA0-368D-476D-B46E-3E5B0877429A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{75285139-6C02-4B4A-B612-C73CF969F3A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{75285139-6C02-4B4A-B612-C73CF969F3A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{75285139-6C02-4B4A-B612-C73CF969F3A7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EF80AEA0-368D-476D-B46E-3E5B0877429A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EF80AEA0-368D-476D-B46E-3E5B0877429A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EF80AEA0-368D-476D-B46E-3E5B0877429A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EF80AEA0-368D-476D-B46E-3E5B0877429A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
