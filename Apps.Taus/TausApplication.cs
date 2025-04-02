@@ -10,12 +10,6 @@ public class TausApplication : IApplication, ICategoryProvider
         get => [ApplicationCategory.MachineTranslationAndMtqe];
         set { }
     }
-    
-    public string Name
-    {
-        get => "TAUS";
-        set { }
-    }
 
     public T GetInstance<T>()
     {
