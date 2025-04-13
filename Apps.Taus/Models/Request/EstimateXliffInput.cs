@@ -23,14 +23,14 @@ namespace Apps.Taus.Models.Request
         [StaticDataSource(typeof(LanguageDataHandler))]
         public string TargetLang { get; set; }
 
-        public float? Threshold { get; set; }
+        public IEnumerable<double>? Threshold { get; set; }
 
         [StaticDataSource(typeof(ConditionDataHandler))]
-        public string? Condition { get; set; }
+        public IEnumerable<string>? Condition { get; set; }
 
         [Display("New Target State")]
         [StaticDataSource(typeof(XliffStateDataHandler))]
-        public string? State { get;set; }
+        public IEnumerable<string>? State { get;set; }
 
     }
 }
