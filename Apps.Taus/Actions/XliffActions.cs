@@ -73,33 +73,45 @@ public class XliffActions : TausInvocable
             var response = await Client.ExecuteWithErrorHandling<EstimationResponse>(request);
             results.Add(transunit.ID, response.Estimates.First().Metrics.First().Value);
 
-            fileContent = Regex.Replace(fileContent, @"(<trans-unit id=""" + transunit.ID + @""")", @"${1} extradata=""" + response.Estimates.First().Metrics.First().Value + @"""");
+            fileContent = Regex.Replace(fileContent, @"(<trans-unit id=""" + transunit.ID + @""")( extradata="".*?"")?", @"${1} extradata=""" + response.Estimates.First().Metrics.First().Value + @"""");
             
         }
         
         if (Input.Threshold != null && Input.Condition != null && Input.State != null)
         {
-            var filteredTUs = new List<string>();
-            switch (Input.Condition) 
+            using var e1 = Input.Threshold.GetEnumerator();
+            using var e2 = Input.Condition.GetEnumerator();
+            using var e3 = Input.State.GetEnumerator();
+
+            while (e1.MoveNext() && e2.MoveNext() && e3.MoveNext())
             {
-                case ">":
-                    filteredTUs = results.Where(x => x.Value > Input.Threshold).Select(x => x.Key).ToList();
-                    break;
-                case ">=":
-                    filteredTUs = results.Where(x => x.Value >= Input.Threshold).Select(x => x.Key).ToList();
-                    break;
-                case "=":
-                    filteredTUs = results.Where(x => x.Value == Input.Threshold).Select(x => x.Key).ToList();
-                    break;
-                case "<":
-                    filteredTUs = results.Where(x => x.Value < Input.Threshold).Select(x => x.Key).ToList();
-                    break;
-                case "<=":
-                    filteredTUs = results.Where(x => x.Value <= Input.Threshold).Select(x => x.Key).ToList();
-                    break;
+                var threshold = e1.Current;
+                var condition = e2.Current;
+                var state = e3.Current;
+
+                var filteredTUs = new List<string>();
+                switch (condition)
+                {
+                    case ">":
+                        filteredTUs = results.Where(x => x.Value > threshold).Select(x => x.Key).ToList();
+                        break;
+                    case ">=":
+                        filteredTUs = results.Where(x => x.Value >= threshold).Select(x => x.Key).ToList();
+                        break;
+                    case "=":
+                        filteredTUs = results.Where(x => x.Value == threshold).Select(x => x.Key).ToList();
+                        break;
+                    case "<":
+                        filteredTUs = results.Where(x => x.Value < threshold).Select(x => x.Key).ToList();
+                        break;
+                    case "<=":
+                        filteredTUs = results.Where(x => x.Value <= threshold).Select(x => x.Key).ToList();
+                        break;
+                }
+
+                fileContent = UpdateTargetState(fileContent, state, filteredTUs);
             }
 
-            fileContent = UpdateTargetState(fileContent, Input.State, filteredTUs);
         }
          
 
