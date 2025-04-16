@@ -125,7 +125,7 @@ public class XliffActions : TausInvocable
     private string UpdateTargetState(string fileContent, string state, List<string> filteredTUs)
     {
         var tus = Regex.Matches(fileContent, @"<trans-unit[\s\S]+?</trans-unit>").Select(x => x.Value);
-        foreach (var tu in tus.Where(x => filteredTUs.Any(y => y == Regex.Match(x, @"<trans-unit id=""(\d+)""").Groups[1].Value)))
+        foreach (var tu in tus.Where(x => filteredTUs.Any(y => y == Regex.Match(x, @"<trans-unit id=""(.+?)""").Groups[1].Value)))
         {
             string transformedTU = Regex.IsMatch(tu, @"<target(.*?)state=""(.*?)""(.*?)>") ? 
                 Regex.Replace(tu, @"<target(.*?state="")(.*?)("".*?)>",@"<target${1}"+state+"${3}>")
