@@ -17,6 +17,8 @@ using System.Xml.Linq;
 using Apps.Taus.Models;
 using System.Net.Mime;
 using System.Text.RegularExpressions;
+using System.ComponentModel.DataAnnotations;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 
 namespace Apps.Taus.Actions;
 
@@ -33,6 +35,9 @@ public class XliffActions : TausInvocable
     [Action("Estimate XLIFF", Description = "Gets quality estimation data for all segments in an XLIFF 1.2 file")]
     public async Task<XliffResponse> EstimateXliff([ActionParameter] EstimateXliffInput Input)
     {
+        if (string.IsNullOrWhiteSpace(Input.TargetLang))
+            throw new PluginMisconfigurationException("Target language must be specified. Please check your input and try again");
+
         var _file = await _fileManagementClient.DownloadAsync(Input.File);
 
         var transunits = ExtractSegmentsFromXliff(_file);
