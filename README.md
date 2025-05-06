@@ -6,14 +6,14 @@ Blackbird is the new automation backbone for the language technology industry. B
 
 <!-- begin docs -->
 
-TAUS Quality Estimate by Language Data Network helps users assess the quality of machine-translated content and make informed decisions about its suitability for various purposes.
+TAUS EPIC API helps users assess the quality of machine-translated content and make informed decisions about its suitability for various purposes.
 
 ## Before setting up
 
 Before you can connect you need to make sure that:
 
 - You have a TAUS account.
-- You have an API key corresponding to your TAUS account. You can find API keys [here](https://www.taus.net/user/services)
+- You have an API key corresponding to your TAUS account. You can find API keys [here](https://www.taus.net/user/epic-api/keys)
 
 ## Connecting
 
