@@ -99,7 +99,7 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
 
     private static string FindTausLanguage(string language)
     {
-        language = language.Split('-').FirstOrDefault();
+        language = language?.Split('-')?.FirstOrDefault()?.ToLower();
         var handler = new LanguageDataHandler();
         var languageExists = handler.GetData().FirstOrDefault(x => x.Value == language) != null;
         if (!languageExists) throw new PluginMisconfigurationException($"The language {language} is not compatible with the TAUS API.");
