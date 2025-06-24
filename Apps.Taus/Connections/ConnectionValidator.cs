@@ -36,7 +36,6 @@ public class ConnectionValidator : IConnectionValidator
         try
         {
             await client.ExecuteWithErrorHandling<EstimationResponse>(request);
-
             return new()
             {
                 IsValid = true

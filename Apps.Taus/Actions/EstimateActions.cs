@@ -11,36 +11,34 @@ using RestSharp;
 namespace Apps.Taus.Actions;
 
 [ActionList]
-public class EstimateActions : TausInvocable
+public class EstimateActions(InvocationContext invocationContext) : TausInvocable(invocationContext)
 {
-    public EstimateActions(InvocationContext invocationContext) : base(invocationContext)
-    {
-    }
-
     [Action("Estimate", Description = "Get estimation data for a segment")]
-    public async Task<Metric> Estimate([ActionParameter] EstimateInput estimateInput)
+    public async Task<EstimationResponse> Estimate([ActionParameter] EstimateInput estimateInput)
     {
-        var request = new TausRequest(ApiEndpoints.Estimate, Method.Post, Creds)
-            .AddJsonBody(new EstimationRequest
+        var request = new TausRequest(ApiEndpoints.EstimateV2, Method.Post, Creds)
+            .AddJsonBody(new EstimationRequestV2
             {
                 Source = new()
                 {
                     Value = estimateInput.Source,
-                    Language = estimateInput.SourceLanguage,
-                    Label = estimateInput.SourceLabel
+                    Language = estimateInput.SourceLanguage
                 },
-                Targets = new()
+                Target = new()
                 {
-                    new()
-                    {
-                        Value = estimateInput.Target,
-                        Language = estimateInput.TargetLanguage,
-                        Label = estimateInput.TargetLabel
-                    }
+                    Value = estimateInput.Target,
+                    Language = estimateInput.TargetLanguage
+                },
+                Label = estimateInput.Label,
+                ApeConfig = new ApeConfig
+                {
+                    Threshold = estimateInput.ApeThreshold ?? 1,
+                    LowThreshold = estimateInput.ApeLowThreshold ?? 0,
+                    UseRag = estimateInput.UseRag ?? false
                 }
             });
 
         var response = await Client.ExecuteWithErrorHandling<EstimationResponse>(request);
-        return response.Estimates.First().Metrics.First();
+        return response;
     }
 }
