@@ -6,8 +6,11 @@ public class EstimationResponse
 {
     public Segment Source { get; set; } = new();
     public Segment Target { get; set; } = new();
+    [Display("Estimate result")]
     public EstimateResult EstimateResult { get; set; } = new();
+    [Display("Ape triggered")]
     public bool ApeTriggered { get; set; }
+    [Display("Ape result")]
     public ApeResult ApeResult { get; set; } = new();
     public string Label { get; set; } = string.Empty;
 }
@@ -33,16 +36,16 @@ public class MetricInfo
 
 public class ApeResult
 {
-    [Display("APE Revisions")]
+    [Display("APE revisions")]
     public List<ApeRevision> ApeRevisions { get; set; } = new();
     
     [Display("Score")]
     public float Score { get; set; }
     
-    [Display("Edit Distance")]
+    [Display("Edit distance")]
     public int EditDistance { get; set; }
     
-    [Display("Billed Words")]
+    [Display("Billed words")]
     public int BilledWords { get; set; }
 }
 
