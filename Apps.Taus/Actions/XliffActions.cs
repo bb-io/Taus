@@ -83,29 +83,30 @@ public class XliffActions(InvocationContext invocationContext, IFileManagementCl
                 var condition = e2.Current;
                 var state = e3.Current;
 
-                var filteredIndexes = new List<int>();
+                var filteredResults = new List<TranslationResult>();
                 switch (condition)
                 {
                     case ">":
-                        filteredIndexes = response.Results.Where(x => x.Score > threshold).Select((x, i) => i).ToList();
+                        filteredResults = response.Results.Where(x => x.Score > threshold).ToList();
                         break;
                     case ">=":
-                        filteredIndexes = response.Results.Where(x => x.Score >= threshold).Select((x, i) => i).ToList();
+                        filteredResults = response.Results.Where(x => x.Score >= threshold).ToList();
                         break;
                     case "=":
-                        filteredIndexes = response.Results.Where(x => x.Score == threshold).Select((x, i) => i).ToList();
+                        filteredResults = response.Results.Where(x => x.Score == threshold).ToList();
                         break;
                     case "<":
-                        filteredIndexes = response.Results.Where(x => x.Score < threshold).Select((x, i) => i).ToList();
+                        filteredResults = response.Results.Where(x => x.Score < threshold).ToList();
                         break;
                     case "<=":
-                        filteredIndexes = response.Results.Where(x => x.Score <= threshold).Select((x, i) => i).ToList();
+                        filteredResults = response.Results.Where(x => x.Score <= threshold).ToList();
                         break;
                 }
 
-                filteredIndexes.ForEach(index =>
+                foreach (var result in filteredResults)
                 {
-                    var translationUnit = translationUnits[index];
+                    var translationUnit = translationUnits.FirstOrDefault(x => x.Source.Content == result.Source && x.Target.Content == result.Target);
+                        
                     if (translationUnit != null)
                     {
                         var stateAttribute = translationUnit.Target?.Attributes?.FirstOrDefault(x => x.Key == "state");
@@ -119,7 +120,7 @@ public class XliffActions(InvocationContext invocationContext, IFileManagementCl
                             translationUnit.Target?.Attributes?.Add("state", state);
                         }
                     }
-                });
+                }
             }
         }
 
