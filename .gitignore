@@ -355,3 +355,4 @@ healthchecksdb
 *.dmg
 *.env
 /Tests.Taus/appsettings.json
+/Tests.Taus/TestFiles/Output

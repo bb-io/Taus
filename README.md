@@ -53,6 +53,10 @@ Similarly, the setup below will cause all the segments with a quality score belo
 
 ![TAUSoptionalinput2](image/README/TAUSoptionalinput2.png)
 
+The files should meet the following requirements:
+- max 1000 segments per file
+- file size maximum 262 kb
+
 ## Feedback
 
 Do you want to use this app or do you have feedback on our implementation? Reach out to us using the [established channels](https://www.blackbird.io/) or create an issue.

@@ -1,6 +1,4 @@
-﻿using Apps.Taus.Api;
-using Apps.Taus.Constants;
-using Apps.Taus.DataSourceHandlers;
+﻿using Apps.Taus.DataSourceHandlers;
 using Apps.Taus.Invocables;
 using Apps.Taus.Models.Request;
 using Apps.Taus.Models.Response;
@@ -13,7 +11,6 @@ using Blackbird.Xliff.Utils.Constants;
 using Blackbird.Xliff.Utils.Extensions;
 using Blackbird.Xliff.Utils.Models.Content;
 using Blackbird.Xliff.Utils.Serializers.Xliff2;
-using RestSharp;
 
 namespace Apps.Taus.Actions;
 
@@ -43,11 +40,15 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
             var source = segment.GetSource(TagInclusion.Ignore);
             var target = segment.GetTarget(TagInclusion.Ignore);
             if (target == null) continue;
-            var estimate = await PerformEstimateRequest(source, srcLanguage, target, trgLanguage);
+            var estimate = await PerformEstimateRequest(source, srcLanguage, target, trgLanguage, input.Threshhold);
 
-            var result = estimate.Estimates?.FirstOrDefault()?.Metrics?.FirstOrDefault()?.Value;
-            if (result == null) continue;
-            var score = (float) result;
+            var result = estimate.EstimateResult?.Score;
+            if (result == null)
+            {
+                continue;
+            }
+
+            var score = result.Value;
             processedSegmentsCount++;
             totalScore += score;
 
@@ -55,7 +56,8 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
             {
                 segment.State = SegmentState.Final;
                 finalizedSegmentsCount++;
-            } else
+            }
+            else
             {
                 riskySegmentsCount++;
             }
@@ -75,26 +77,17 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         };
     }
 
-    private async Task<EstimationResponse> PerformEstimateRequest(string source, string sourceLanguage, string target, string targetLanguage)
+    private async Task<EstimationResponse> PerformEstimateRequest(string source, string sourceLanguage, string target, string targetLanguage, double threshold = 0.8)
     {
-        var request = new TausRequest(ApiEndpoints.Estimate, Method.Post, Creds)
-            .AddJsonBody(new EstimationRequest
-            {
-                Source = new()
-                {
-                    Value = source,
-                    Language = sourceLanguage
-                },
-                Targets = new()
-                {
-                    new()
-                    {
-                        Value = target,
-                        Language = targetLanguage
-                    }
-                }
-            });
-        return await Client.ExecuteWithErrorHandling<EstimationResponse>(request);
+        var estimateActions = new EstimateActions(InvocationContext);
+        return await estimateActions.Estimate(new EstimateInput
+        {
+            Source = source,
+            SourceLanguage = sourceLanguage,
+            Target = target,
+            TargetLanguage = targetLanguage,
+            Threshold = threshold
+        });
     }
 
     private static string FindTausLanguage(string language)

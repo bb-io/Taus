@@ -1,6 +1,5 @@
 using Apps.Taus.Connections;
 using Blackbird.Applications.Sdk.Common.Authentication;
-using System.Net;
 using Tests.Taus.Base;
 
 namespace Tests.Taus;

@@ -1,11 +1,6 @@
 ﻿using Apps.Taus.Invocables;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Apps.Taus.Api;
 using Apps.Taus.Constants;
 using Apps.Taus.Models.Request;
@@ -13,75 +8,69 @@ using Apps.Taus.Models.Response;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using RestSharp;
-using System.Xml.Linq;
-using Apps.Taus.Models;
 using System.Net.Mime;
 using System.Text.RegularExpressions;
-using System.ComponentModel.DataAnnotations;
 using Blackbird.Applications.Sdk.Common.Exceptions;
+using Apps.Taus.Utils;
+using Blackbird.Applications.Sdk.Utils.Extensions.Files;
+using Blackbird.Xliff.Utils.Extensions;
+using System.Globalization;
 
 namespace Apps.Taus.Actions;
 
 [ActionList]
-public class XliffActions : TausInvocable
+public class XliffActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : TausInvocable(
+   invocationContext)
 {
-    private readonly IFileManagementClient _fileManagementClient;
-    public XliffActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : base(
-       invocationContext)
-    {
-        _fileManagementClient = fileManagementClient;
-    }
+    private readonly IFileManagementClient _fileManagementClient = fileManagementClient;
 
     [Action("Estimate XLIFF", Description = "Gets quality estimation data for all segments in an XLIFF 1.2 file")]
     public async Task<XliffResponse> EstimateXliff([ActionParameter] EstimateXliffInput Input)
     {
         if (string.IsNullOrWhiteSpace(Input.TargetLang))
+        {
             throw new PluginMisconfigurationException("Target language must be specified. Please check your input and try again");
-
-        var _file = await _fileManagementClient.DownloadAsync(Input.File);
-
-        var transunits = ExtractSegmentsFromXliff(_file);
-
-        var results = new Dictionary<string, float>();
+        }
 
         var file = await _fileManagementClient.DownloadAsync(Input.File);
-        string fileContent;
-        Encoding encoding;
-        using (var inFileStream = new StreamReader(file, true))
-        {
-            encoding = inFileStream.CurrentEncoding;
-            fileContent = inFileStream.ReadToEnd();
-        }
+        var memporyStream = new MemoryStream();
+        await file.CopyToAsync(memporyStream);
+        memporyStream.Position = 0;
 
-        foreach (var transunit in transunits)
+        var xliffDocument = memporyStream.ConvertFromXliff();
+        var translationUnits = xliffDocument.Files
+            .SelectMany(file => file.TranslationUnits)
+            .ToList();
+
+        var csvFileStream = await XliffToCsvConverter.ConvertXliffToCsv(xliffDocument);
+        var bytes = await csvFileStream.GetByteData();
+        var request = new TausRequest(ApiEndpoints.EstimateFileUpload, Method.Post, Creds)
+            .AddFile("file", bytes, Input.File.Name, MediaTypeNames.Text.Csv)
+            .AddParameter("source_language", Input.SourceLang)
+            .AddParameter("target_language", Input.TargetLang);
+
+        var response = await Client.ExecuteWithErrorHandling<EstimateFileUploadResponse>(request);
+        int counter = 0;
+        foreach (var result in response.Results)
         {
-            var request = new TausRequest(ApiEndpoints.Estimate, Method.Post, Creds)
-            .AddJsonBody(new EstimationRequest
+            var translationUnit = translationUnits.FirstOrDefault(x => x.Source.Content == result.Source && x.Target.Content == result.Target);
+            if (translationUnit != null)
             {
-                Source = new()
+                var attribute = translationUnit.Attributes.FirstOrDefault(x => x.Key == "extradata");
+                if (!string.IsNullOrEmpty(attribute.Key))
                 {
-                    Value = transunit.Source,
-                    Language = Input.SourceLang,
-                    Label = ""
-                },
-                Targets = new()
-                {
-                    new()
-                    {
-                        Value = transunit.Target,
-                        Language = Input.TargetLang,
-                        Label = ""
-                    }
+                    translationUnit.Attributes.Remove(attribute.Key);
+                    translationUnit.Attributes.Add("extradata", result.Score.ToString(CultureInfo.InvariantCulture));
                 }
-            });
+                else
+                {
+                    translationUnit.Attributes.Add("extradata", result.Score.ToString(CultureInfo.InvariantCulture));
+                }
 
-            var response = await Client.ExecuteWithErrorHandling<EstimationResponse>(request);
-            results.Add(transunit.ID, response.Estimates.First().Metrics.First().Value);
-
-            fileContent = Regex.Replace(fileContent, @"(<trans-unit id=""" + transunit.ID + @""")( extradata="".*?"")?", @"${1} extradata=""" + response.Estimates.First().Metrics.First().Value + @"""");
-            
+                counter += 1;
+            }
         }
-        
+
         if (Input.Threshold != null && Input.Condition != null && Input.State != null)
         {
             using var e1 = Input.Threshold.GetEnumerator();
@@ -94,72 +83,56 @@ public class XliffActions : TausInvocable
                 var condition = e2.Current;
                 var state = e3.Current;
 
-                var filteredTUs = new List<string>();
+                var filteredResults = new List<TranslationResult>();
                 switch (condition)
                 {
                     case ">":
-                        filteredTUs = results.Where(x => x.Value > threshold).Select(x => x.Key).ToList();
+                        filteredResults = response.Results.Where(x => x.Score > threshold).ToList();
                         break;
                     case ">=":
-                        filteredTUs = results.Where(x => x.Value >= threshold).Select(x => x.Key).ToList();
+                        filteredResults = response.Results.Where(x => x.Score >= threshold).ToList();
                         break;
                     case "=":
-                        filteredTUs = results.Where(x => x.Value == threshold).Select(x => x.Key).ToList();
+                        filteredResults = response.Results.Where(x => x.Score == threshold).ToList();
                         break;
                     case "<":
-                        filteredTUs = results.Where(x => x.Value < threshold).Select(x => x.Key).ToList();
+                        filteredResults = response.Results.Where(x => x.Score < threshold).ToList();
                         break;
                     case "<=":
-                        filteredTUs = results.Where(x => x.Value <= threshold).Select(x => x.Key).ToList();
+                        filteredResults = response.Results.Where(x => x.Score <= threshold).ToList();
                         break;
                 }
 
-                fileContent = UpdateTargetState(fileContent, state, filteredTUs);
+                foreach (var result in filteredResults)
+                {
+                    var translationUnit = translationUnits.FirstOrDefault(x => x.Source.Content == result.Source && x.Target.Content == result.Target);
+                        
+                    if (translationUnit != null)
+                    {
+                        var stateAttribute = translationUnit.Target?.Attributes?.FirstOrDefault(x => x.Key == "state");
+                        if (stateAttribute != null && !string.IsNullOrEmpty(stateAttribute.Value.Key))
+                        {
+                            translationUnit.Target?.Attributes?.Remove(stateAttribute.Value.Key);
+                            translationUnit.Target?.Attributes?.Add("state", state);
+                        }
+                        else
+                        {
+                            translationUnit.Target?.Attributes?.Add("state", state);
+                        }
+                    }
+                }
             }
-
         }
-         
 
+        var xliffStream = xliffDocument.ConvertToXliff();
+        var outputFile = await _fileManagementClient.UploadAsync(xliffStream, MediaTypeNames.Text.Xml, Input.File.Name);
         return new XliffResponse
         {
-            AverageMetric = results.Average(x => x.Value),
-            File = await _fileManagementClient.UploadAsync(new MemoryStream(encoding.GetBytes(fileContent)), MediaTypeNames.Text.Xml, Input.File.Name)
+            AverageMetric = response.Results.Average(x => x.Score),
+            File = outputFile,
+            EstimatedUnits = counter
         };
     }
-
-    private string UpdateTargetState(string fileContent, string state, List<string> filteredTUs)
-    {
-        var tus = Regex.Matches(fileContent, @"<trans-unit[\s\S]+?</trans-unit>").Select(x => x.Value);
-        foreach (var tu in tus.Where(x => filteredTUs.Any(y => y == Regex.Match(x, @"<trans-unit id=""(.+?)""").Groups[1].Value)))
-        {
-            string transformedTU = Regex.IsMatch(tu, @"<target(.*?)state=""(.*?)""(.*?)>") ? 
-                Regex.Replace(tu, @"<target(.*?state="")(.*?)("".*?)>",@"<target${1}"+state+"${3}>")
-                : Regex.Replace(tu,"<target",@"<target state="""+state+@"""");
-            fileContent = Regex.Replace(fileContent,Regex.Escape(tu),transformedTU);
-        }
-        return fileContent;
-    }
-
-    public List<TranslationUnit> ExtractSegmentsFromXliff(Stream inputStream)
-    {
-        var TUs = new List<TranslationUnit>();
-        using var reader = new StreamReader(inputStream, Encoding.UTF8);
-        var xliffDocument = XDocument.Load(reader);
-
-        XNamespace defaultNs = xliffDocument.Root.GetDefaultNamespace();
-
-        foreach (var transUnit in xliffDocument.Descendants(defaultNs + "trans-unit"))
-        {
-            TUs.Add(new TranslationUnit
-            {
-                ID = transUnit.Attribute("id")?.Value,
-                Source = transUnit.Element(defaultNs + "source").Value,
-                Target = transUnit.Element(defaultNs + "target").Value
-            });
-        }
-        return TUs;
-    }
-
 }
 
 
