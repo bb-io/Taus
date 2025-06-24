@@ -3,8 +3,8 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Product>TAUS Quality Estimation</Product>
-    <Version>1.1.6</Version>
+    <Product>TAUS</Product>
+    <Version>1.2.0</Version>
     <Description>Provides real-time MT quality scores.</Description>
     <AssemblyName>Apps.Taus</AssemblyName>
   </PropertyGroup>
