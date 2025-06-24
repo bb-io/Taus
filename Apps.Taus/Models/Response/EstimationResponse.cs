@@ -17,6 +17,7 @@ public class EstimationResponse
 
 public class EstimateResult
 {
+    [DefinitionIgnore]
     public MetricInfo Metric { get; set; } = new();
     
     [Display("Score")]
