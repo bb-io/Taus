@@ -1,22 +1,16 @@
 ﻿using Apps.Taus.Actions;
-using Apps.Taus.Connections;
 using Apps.Taus.Models.Request;
 using Blackbird.Applications.Sdk.Common.Files;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Tests.Taus.Base;
 
 namespace Tests.Taus;
 
 [TestClass]
-public class ContentTests : TestBase
+public class ContentActionsTests : TestBase
 {
     [TestMethod]
-    public async Task Review_xliff_content()
+    public async Task EstimateContent_ValidXliff_Success()
     {
         var actions = new ContentActions(InvocationContext, FileManager);
         var file = new FileReference { Name = "contentful.html.xliff" };

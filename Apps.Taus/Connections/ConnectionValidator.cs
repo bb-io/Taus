@@ -15,27 +15,24 @@ public class ConnectionValidator : IConnectionValidator
         IEnumerable<AuthenticationCredentialsProvider> authProviders, CancellationToken cancellationToken)
     {
         var client = new TausClient(authProviders);
-        var request = new TausRequest(ApiEndpoints.Estimate, Method.Post, authProviders)
-            .AddJsonBody(new EstimationRequest
+        var request = new TausRequest(ApiEndpoints.EstimateV2, Method.Post, authProviders)
+            .AddJsonBody(new EstimationRequestV2
             {
                 Source = new()
                 {
                     Value = "Test input",
-                    Language = "en",
+                    Language = "en"
                 },
-                Targets = new()
+                Target = new()
                 {
-                    new()
-                    {
-                        Value = "Test input",
-                        Language = "de",
-                    }
+                    Value = "Entrada de prueba",
+                    Language = "es"
                 }
             });
 
         try
         {
-            await client.ExecuteWithErrorHandling<EstimationResponse>(request);
+            var response = await client.ExecuteWithErrorHandling<EstimationResponse>(request);
             return new()
             {
                 IsValid = true

@@ -31,4 +31,8 @@
     <ProjectReference Include="..\Apps.Taus\Apps.Taus.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="TestFiles\Output\" />
+  </ItemGroup>
+
 </Project>

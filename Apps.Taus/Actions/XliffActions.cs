@@ -50,6 +50,7 @@ public class XliffActions(InvocationContext invocationContext, IFileManagementCl
             .AddParameter("target_language", Input.TargetLang);
 
         var response = await Client.ExecuteWithErrorHandling<EstimateFileUploadResponse>(request);
+        int counter = 0;
         foreach (var result in response.Results)
         {
             var translationUnit = translationUnits.FirstOrDefault(x => x.Source.Content == result.Source && x.Target.Content == result.Target);
@@ -65,6 +66,8 @@ public class XliffActions(InvocationContext invocationContext, IFileManagementCl
                 {
                     translationUnit.Attributes.Add("extradata", result.Score.ToString(CultureInfo.InvariantCulture));
                 }
+
+                counter += 1;
             }
         }
 
@@ -125,7 +128,8 @@ public class XliffActions(InvocationContext invocationContext, IFileManagementCl
         return new XliffResponse
         {
             AverageMetric = response.Results.Average(x => x.Score),
-            File = outputFile
+            File = outputFile,
+            EstimatedUnits = counter
         };
     }
 }

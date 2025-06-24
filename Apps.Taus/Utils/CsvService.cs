@@ -14,7 +14,7 @@ public class CsvService
         _csvConfiguration = new CsvConfiguration(CultureInfo.InvariantCulture)
         {
             HasHeaderRecord = true,
-            Delimiter = ",",
+            Delimiter = "\t",
             Quote = '"',
             TrimOptions = TrimOptions.Trim,
             MissingFieldFound = null
