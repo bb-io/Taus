@@ -31,4 +31,7 @@ public class EstimateInput
 
     [Display("Use RAG")]
     public bool? UseRag { get; set; }
+
+    [Display("Threshold", Description = "Threshold score for automatic finalization")]
+    public double Threshold { get; set; } = 0.8;
 }

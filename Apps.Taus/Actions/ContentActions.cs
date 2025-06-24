@@ -40,7 +40,7 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
             var source = segment.GetSource(TagInclusion.Ignore);
             var target = segment.GetTarget(TagInclusion.Ignore);
             if (target == null) continue;
-            var estimate = await PerformEstimateRequest(source, srcLanguage, target, trgLanguage);
+            var estimate = await PerformEstimateRequest(source, srcLanguage, target, trgLanguage, input.Threshhold);
 
             var result = estimate.EstimateResult?.Score;
             if (result == null)
@@ -56,7 +56,8 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
             {
                 segment.State = SegmentState.Final;
                 finalizedSegmentsCount++;
-            } else
+            }
+            else
             {
                 riskySegmentsCount++;
             }
@@ -76,15 +77,16 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         };
     }
 
-    private async Task<EstimationResponse> PerformEstimateRequest(string source, string sourceLanguage, string target, string targetLanguage)
+    private async Task<EstimationResponse> PerformEstimateRequest(string source, string sourceLanguage, string target, string targetLanguage, double threshold = 0.8)
     {
-        var stimateActions = new EstimateActions(InvocationContext);
-        return await stimateActions.Estimate(new EstimateInput
+        var estimateActions = new EstimateActions(InvocationContext);
+        return await estimateActions.Estimate(new EstimateInput
         {
             Source = source,
             SourceLanguage = sourceLanguage,
             Target = target,
-            TargetLanguage = targetLanguage
+            TargetLanguage = targetLanguage,
+            Threshold = threshold
         });
     }
 
