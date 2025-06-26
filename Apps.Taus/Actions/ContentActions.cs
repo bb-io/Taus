@@ -78,6 +78,8 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
 
     private async Task<EstimationResponse> PerformEstimateRequest(string source, string sourceLanguage, string target, string targetLanguage, double threshold = 0.8)
     {
+        await Task.Delay(800);
+
         var estimateActions = new EstimateActions(InvocationContext);
         return await estimateActions.Estimate(new EstimateInput
         {

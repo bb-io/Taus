@@ -12,7 +12,7 @@ public class XliffActionsTests : TestBase
     public async Task EstimateContent_ValidXliff_Success()
     {
         var actions = new XliffActions(InvocationContext, FileManager);
-        var file = new FileReference { Name = "simple.xliff" };
+        var file = new FileReference { Name = "About Us_en.html.xliff" };
 
         var result = await actions.EstimateXliff(new()
         {
