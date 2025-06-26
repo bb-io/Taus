@@ -30,12 +30,12 @@ public class EstimateActions(InvocationContext invocationContext) : TausInvocabl
                     Language = estimateInput.TargetLanguage
                 },
                 Label = estimateInput.Label,
-                ApeConfig = new ApeConfig
+                ApeConfig = estimateInput.ApplyApe.HasValue && estimateInput.ApplyApe.Value ? new ApeConfig
                 {
                     Threshold = estimateInput.ApeThreshold ?? 1,
                     LowThreshold = estimateInput.ApeLowThreshold ?? 0,
                     UseRag = estimateInput.UseRag ?? false
-                }
+                } : null
             });
 
         var response = await Client.ExecuteWithErrorHandling<EstimationResponse>(request);

@@ -23,6 +23,9 @@ public class EstimateInput
     [Display("Label")]
     public string? Label { get; set; }
 
+    [Display("Apply APE")]
+    public bool? ApplyApe { get; set; }
+
     [Display("APE threshold")]
     public float? ApeThreshold { get; set; }
 
