@@ -7,10 +7,9 @@ using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using Blackbird.Xliff.Utils.Constants;
-using Blackbird.Xliff.Utils.Extensions;
-using Blackbird.Xliff.Utils.Models.Content;
-using Blackbird.Xliff.Utils.Serializers.Xliff2;
+using Blackbird.Filters.Enums;
+using Blackbird.Filters.Extensions;
+using Blackbird.Filters.Transformations;
 
 namespace Apps.Taus.Actions;
 
@@ -21,7 +20,7 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
     public async Task<ContentReviewResponse> EstimateContent([ActionParameter] EstimateContentRequest input)
     {
         var stream = await fileManagementClient.DownloadAsync(input.File);
-        var content = await FileGroup.TryParse(stream);
+        var content = await Transformation.Parse(stream);
         if (content == null) throw new PluginApplicationException("Something went wrong parsing this XLIFF file. Please send a copy of this file to the team for inspection!");
         if (content.SourceLanguage == null) throw new PluginMisconfigurationException("The source language is not defined yet. Please assign the source language in this action.");
         if (content.TargetLanguage == null) throw new PluginMisconfigurationException("The target language is not defined yet. Please assign the target language in this action.");
@@ -34,11 +33,11 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         var riskySegmentsCount = 0;
         float totalScore = 0f;
 
-        foreach(var segment in content.IterateSegments().Where(x => !x.Ignorable && !x.IsInitial() && x.State != SegmentState.Final))
+        foreach(var segment in content.GetSegments().Where(x => !x.IsIgnorbale && !x.IsInitial && x.State != SegmentState.Final))
         {
             if (segment == null) continue;
-            var source = segment.GetSource(TagInclusion.Ignore);
-            var target = segment.GetTarget(TagInclusion.Ignore);
+            var source = segment.GetSource();
+            var target = segment.GetTarget();
             if (target == null) continue;
             var estimate = await PerformEstimateRequest(source, srcLanguage, target, trgLanguage, input.Threshhold);
 
@@ -63,7 +62,7 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
             }
         }
 
-        var streamResult = Xliff2Serializer.Serialize(content).ToStream();
+        var streamResult = content.Serialize().ToStream();
         var finalFile = await fileManagementClient.UploadAsync(streamResult, input.File.ContentType, input.File.Name);
 
         return new ContentReviewResponse
