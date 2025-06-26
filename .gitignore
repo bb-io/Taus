@@ -356,3 +356,4 @@ healthchecksdb
 *.env
 /Tests.Taus/appsettings.json
 /Tests.Taus/TestFiles/Output
+/Tests.Taus/appsettings.json
