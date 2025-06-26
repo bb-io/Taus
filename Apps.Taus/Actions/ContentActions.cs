@@ -2,6 +2,7 @@
 using Apps.Taus.Invocables;
 using Apps.Taus.Models.Request;
 using Apps.Taus.Models.Response;
+using Apps.Taus.Utils;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
@@ -19,7 +20,9 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
     [Action("Review content", Description = "Estimate translated content returned from other content processing actions")]
     public async Task<ContentReviewResponse> EstimateContent([ActionParameter] EstimateContentRequest input)
     {
-        var stream = await fileManagementClient.DownloadAsync(input.File);
+        return await ErrorHandler.ExecuteWithErrorHandlingAsync(async () =>
+        {
+            var stream = await fileManagementClient.DownloadAsync(input.File);
         var content = await Transformation.Parse(stream);
         if (content == null) throw new PluginApplicationException("Something went wrong parsing this XLIFF file. Please send a copy of this file to the team for inspection!");
         if (content.SourceLanguage == null) throw new PluginMisconfigurationException("The source language is not defined yet. Please assign the source language in this action.");
@@ -74,6 +77,7 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
             AverageMetric = processedSegmentsCount > 0 ? (totalScore / processedSegmentsCount) : totalScore,
             PercentageSegmentsUnderThreshhold = processedSegmentsCount > 0 ? ((float)riskySegmentsCount / (float)processedSegmentsCount) : riskySegmentsCount,
         };
+        });
     }
 
     private async Task<EstimationResponse> PerformEstimateRequest(string source, string sourceLanguage, string target, string targetLanguage, double threshold = 0.8)
