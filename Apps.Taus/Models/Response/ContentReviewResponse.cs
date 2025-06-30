@@ -18,12 +18,12 @@ public class ContentReviewResponse
     [Display("Total segments finalized")]
     public int TotalSegmentsFinalized { get; set; }
 
-    [Display("Total segments under threshhold")]
+    [Display("Total segments under threshold")]
     public int TotalSegmentsUnderThreshhold { get; set; }
 
-    [Display("Average Score")]
+    [Display("Average score")]
     public float AverageMetric { get; set; }
 
-    [Display("Percentage segments under threshhold")]
+    [Display("Percentage segments under threshold")]
     public float PercentageSegmentsUnderThreshhold { get; set; }
 }
