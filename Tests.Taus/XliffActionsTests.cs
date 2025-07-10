@@ -12,16 +12,16 @@ public class XliffActionsTests : TestBase
     public async Task EstimateContent_ValidXliff_Success()
     {
         var actions = new XliffActions(InvocationContext, FileManager);
-        var file = new FileReference { Name = "About Us_en.html.xliff" };
+        var file = new FileReference { Name = "2.1-deepL.xliff.xliff" };
 
         var result = await actions.EstimateXliff(new()
         {
             File = file,
-            SourceLang = "en",
+            SourceLang = "uk",
             TargetLang = "es",
-            Threshold = [0.8],
-            Condition = [">="],
-            State = ["reviewed"]
+            //Threshold = [0.8],
+            //Condition = [">="],
+            //State = ["reviewed"]
         });
 
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
