@@ -25,6 +25,11 @@ public class TausClient : BlackBirdRestClient
 
     protected override Exception ConfigureErrorException(RestResponse response)
     {
+        if (string.IsNullOrEmpty(response.Content))
+        {
+            return new PluginApplicationException($"API response is empty or missing content. Status: {response.StatusCode}. Please verify the request and API availability.");
+        }
+
         var errorResponse = JsonConvert.DeserializeObject<ErrorResponse>(response.Content)!;
 
         if (errorResponse == null)
@@ -32,10 +37,18 @@ public class TausClient : BlackBirdRestClient
             return new PluginApplicationException(response.ErrorException.Message);
         }
 
-        var errors = errorResponse.Errors?.SelectMany(x => x.Values);
-        var errorMessage = errorResponse.Message is null && errors is null
-            ? response.StatusDescription
-            : $"{errorResponse.Message};{string.Join("; ", errors)}";
+        var errors = errorResponse.Errors?.SelectMany(x => x.Values).ToList();
+
+        string errorMessage;
+
+        if (string.IsNullOrEmpty(errorResponse.Message) && (errors == null || !errors.Any()))
+        {
+            errorMessage = $"Error with status {response.StatusCode}. Response content: {response.Content}";
+        }
+        else
+        {
+            errorMessage = $"{errorResponse.Message ?? "No error message provided by the API."};";
+        }
 
         return new PluginApplicationException(errorMessage);
     }
