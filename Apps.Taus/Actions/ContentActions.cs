@@ -52,8 +52,9 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
             var riskySegmentsCount = 0;
             float totalScore = 0f;
 
-            foreach (var segment in content.GetUnits().SelectMany(x => x.Segments)
-                         .Where(x => !x.IsIgnorbale && !x.IsInitial && x.State != SegmentState.Final))
+            var segments = content.GetUnits().SelectMany(x => x.Segments).ToList();
+            var segmentsToProcess = segments.Where(x => !x.IsIgnorbale && x.State != SegmentState.Final).ToList();
+            foreach (var segment in segmentsToProcess)
             {
                 if (segment == null) continue;
                 var source = segment.GetSource();
