@@ -15,72 +15,93 @@ using Blackbird.Filters.Transformations;
 namespace Apps.Taus.Actions;
 
 [ActionList]
-public class ContentActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : TausInvocable(invocationContext)
+public class ContentActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
+    : TausInvocable(invocationContext)
 {
-    [Action("Review content", Description = "Estimate translated content returned from other content processing actions")]
+    [Action("Review content",
+        Description = "Estimate translated content returned from other content processing actions")]
     public async Task<ContentReviewResponse> EstimateContent([ActionParameter] EstimateContentRequest input)
     {
         return await ErrorHandler.ExecuteWithErrorHandlingAsync(async () =>
         {
             var stream = await fileManagementClient.DownloadAsync(input.File);
-        var content = await Transformation.Parse(stream);
-        if (content == null) throw new PluginApplicationException("Something went wrong parsing this XLIFF file. Please send a copy of this file to the team for inspection!");
-        if (content.SourceLanguage == null) throw new PluginMisconfigurationException("The source language is not defined yet. Please assign the source language in this action.");
-        if (content.TargetLanguage == null) throw new PluginMisconfigurationException("The target language is not defined yet. Please assign the target language in this action.");
-
-        var srcLanguage = FindTausLanguage(content.SourceLanguage);
-        var trgLanguage = FindTausLanguage(content.TargetLanguage);
-
-        var processedSegmentsCount = 0;
-        var finalizedSegmentsCount = 0;
-        var riskySegmentsCount = 0;
-        float totalScore = 0f;
-
-        foreach(var segment in content.GetSegments().Where(x => !x.IsIgnorbale && !x.IsInitial && x.State != SegmentState.Final))
-        {
-            if (segment == null) continue;
-            var source = segment.GetSource();
-            var target = segment.GetTarget();
-            if (target == null) continue;
-            var estimate = await PerformEstimateRequest(source, srcLanguage, target, trgLanguage, input.Threshhold);
-
-            var result = estimate.EstimateResult?.Score;
-            if (result == null)
+            var content = await Transformation.Parse(stream, input.File.Name);
+            if (content == null)
             {
-                continue;
+                throw new PluginApplicationException(
+                    "Something went wrong parsing this XLIFF file. Please send a copy of this file to the team for inspection!");
+            }
+            
+            if (content.SourceLanguage == null)
+            {
+                throw new PluginMisconfigurationException(
+                    "The source language is not defined yet. Please assign the source language in this action.");
+            }
+            
+            if (content.TargetLanguage == null)
+            {
+                throw new PluginMisconfigurationException(
+                    "The target language is not defined yet. Please assign the target language in this action.");
             }
 
-            var score = result.Value;
-            processedSegmentsCount++;
-            totalScore += score;
+            var srcLanguage = FindTausLanguage(content.SourceLanguage);
+            var trgLanguage = FindTausLanguage(content.TargetLanguage);
 
-            if (score >= input.Threshhold) 
+            var processedSegmentsCount = 0;
+            var finalizedSegmentsCount = 0;
+            var riskySegmentsCount = 0;
+            float totalScore = 0f;
+
+            foreach (var segment in content.GetUnits().SelectMany(x => x.Segments)
+                         .Where(x => !x.IsIgnorbale && !x.IsInitial && x.State != SegmentState.Final))
             {
-                segment.State = SegmentState.Final;
-                finalizedSegmentsCount++;
+                if (segment == null) continue;
+                var source = segment.GetSource();
+                var target = segment.GetTarget();
+                if (target == null) continue;
+                var estimate = await PerformEstimateRequest(source, srcLanguage, target, trgLanguage, input.Threshhold);
+
+                var result = estimate.EstimateResult?.Score;
+                if (result == null)
+                {
+                    continue;
+                }
+
+                var score = result.Value;
+                processedSegmentsCount++;
+                totalScore += score;
+
+                if (score >= input.Threshhold)
+                {
+                    segment.State = SegmentState.Final;
+                    finalizedSegmentsCount++;
+                }
+                else
+                {
+                    riskySegmentsCount++;
+                }
             }
-            else
+
+            var streamResult = content.Serialize().ToStream();
+            var finalFile =
+                await fileManagementClient.UploadAsync(streamResult, input.File.ContentType, input.File.Name);
+
+            return new ContentReviewResponse
             {
-                riskySegmentsCount++;
-            }
-        }
-
-        var streamResult = content.Serialize().ToStream();
-        var finalFile = await fileManagementClient.UploadAsync(streamResult, input.File.ContentType, input.File.Name);
-
-        return new ContentReviewResponse
-        {
-            File = finalFile,
-            TotalSegmentsFinalized = finalizedSegmentsCount,
-            TotalSegmentsProcessed = processedSegmentsCount,
-            TotalSegmentsUnderThreshhold = riskySegmentsCount,
-            AverageMetric = processedSegmentsCount > 0 ? (totalScore / processedSegmentsCount) : totalScore,
-            PercentageSegmentsUnderThreshhold = processedSegmentsCount > 0 ? ((float)riskySegmentsCount / (float)processedSegmentsCount) : riskySegmentsCount,
-        };
+                File = finalFile,
+                TotalSegmentsFinalized = finalizedSegmentsCount,
+                TotalSegmentsProcessed = processedSegmentsCount,
+                TotalSegmentsUnderThreshhold = riskySegmentsCount,
+                AverageMetric = processedSegmentsCount > 0 ? (totalScore / processedSegmentsCount) : totalScore,
+                PercentageSegmentsUnderThreshhold = processedSegmentsCount > 0
+                    ? ((float)riskySegmentsCount / (float)processedSegmentsCount)
+                    : riskySegmentsCount,
+            };
         });
     }
 
-    private async Task<EstimationResponse> PerformEstimateRequest(string source, string sourceLanguage, string target, string targetLanguage, double threshold = 0.8)
+    private async Task<EstimationResponse> PerformEstimateRequest(string source, string sourceLanguage, string target,
+        string targetLanguage, double threshold = 0.8)
     {
         await Task.Delay(800);
 
@@ -100,7 +121,8 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         language = language?.Split('-')?.FirstOrDefault()?.ToLower();
         var handler = new LanguageDataHandler();
         var languageExists = handler.GetData().FirstOrDefault(x => x.Value == language) != null;
-        if (!languageExists) throw new PluginMisconfigurationException($"The language {language} is not compatible with the TAUS API.");
+        if (!languageExists)
+            throw new PluginMisconfigurationException($"The language {language} is not compatible with the TAUS API.");
         return language!;
     }
 }

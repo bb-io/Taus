@@ -4,7 +4,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Product>TAUS</Product>
-    <Version>1.2.4</Version>
+    <Version>1.2.5</Version>
     <Description>Provides real-time MT quality scores.</Description>
     <AssemblyName>Apps.Taus</AssemblyName>
   </PropertyGroup>
@@ -13,7 +13,7 @@
     <PackageReference Include="Blackbird.Applications.SDK.Extensions.FileManagement" Version="1.0.1" />
     <PackageReference Include="Blackbird.Applications.Sdk.Utils" Version="1.0.25" />
     <PackageReference Include="Blackbird.Applications.Sdk.Xliff.Utils" Version="1.1.3" />
-    <PackageReference Include="Blackbird.Filters" Version="1.1.2" />
+    <PackageReference Include="Blackbird.Filters" Version="1.1.27" />
     <PackageReference Include="CsvHelper" Version="33.0.1" />
   </ItemGroup>
   <ItemGroup>
