@@ -11,6 +11,7 @@ using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Filters.Enums;
 using Blackbird.Filters.Extensions;
 using Blackbird.Filters.Transformations;
+using Blackbird.Filters.Xliff.Xliff1;
 
 namespace Apps.Taus.Actions;
 
@@ -25,7 +26,14 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         return await ErrorHandler.ExecuteWithErrorHandlingAsync(async () =>
         {
             var stream = await fileManagementClient.DownloadAsync(input.File);
-            var content = await Transformation.Parse(stream, input.File.Name);
+            var memoryStream = new MemoryStream();
+            await stream.CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
+            
+            var bytes = memoryStream.ToArray();
+            var contentString = System.Text.Encoding.UTF8.GetString(bytes);
+            
+            var content = Transformation.Parse(contentString, input.File.Name);
             if (content == null)
             {
                 throw new PluginApplicationException(
@@ -53,7 +61,7 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
             float totalScore = 0f;
 
             var segments = content.GetUnits().SelectMany(x => x.Segments).ToList();
-            var segmentsToProcess = segments.Where(x => !x.IsIgnorbale && x.State != SegmentState.Final).ToList();
+            var segmentsToProcess = segments.Where(x => !x.IsIgnorbale && x.State != SegmentState.Translated && x.State != SegmentState.Final);
             foreach (var segment in segmentsToProcess)
             {
                 if (segment == null) continue;
@@ -83,7 +91,25 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
                 }
             }
 
-            var streamResult = content.Serialize().ToStream();
+            Stream streamResult;
+            if (input.OutputFileHandling == "original")
+            {
+                if (Xliff1Serializer.IsXliff1(contentString))
+                {
+                    var xliff1String = Xliff1Serializer.Serialize(content);
+                    streamResult = xliff1String.ToStream();
+                }
+                else
+                {
+                    var targetContent = content.Target();
+                    streamResult = targetContent.Serialize().ToStream();
+                }
+            }
+            else
+            {
+                streamResult = content.Serialize().ToStream();
+            }
+            
             var finalFile =
                 await fileManagementClient.UploadAsync(streamResult, input.File.ContentType, input.File.Name);
 
