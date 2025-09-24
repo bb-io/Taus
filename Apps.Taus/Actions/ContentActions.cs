@@ -61,7 +61,7 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
             float totalScore = 0f;
 
             var segments = content.GetUnits().SelectMany(x => x.Segments).ToList();
-            var segmentsToProcess = segments.Where(x => !x.IsIgnorbale && x.State != SegmentState.Translated && x.State != SegmentState.Final);
+            var segmentsToProcess = segments.Where(x => !x.IsIgnorbale && x.State != SegmentState.Final);
             foreach (var segment in segmentsToProcess)
             {
                 if (segment == null) continue;
