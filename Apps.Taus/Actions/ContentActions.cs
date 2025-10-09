@@ -15,7 +15,7 @@ using Blackbird.Filters.Xliff.Xliff1;
 
 namespace Apps.Taus.Actions;
 
-[ActionList]
+[ActionList("Content")]
 public class ContentActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : TausInvocable(invocationContext)
 {

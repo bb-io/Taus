@@ -18,12 +18,10 @@ using System.Globalization;
 
 namespace Apps.Taus.Actions;
 
-[ActionList]
+[ActionList("XLIFF (deprecated, use Content actions instead)")]
 public class XliffActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : TausInvocable(
    invocationContext)
 {
-    private readonly IFileManagementClient _fileManagementClient = fileManagementClient;
-
     [Action("Estimate XLIFF", Description = "Gets quality estimation data for all segments in an XLIFF 1.2 file")]
     public async Task<XliffResponse> EstimateXliff([ActionParameter] EstimateXliffInput Input)
     {
@@ -32,7 +30,7 @@ public class XliffActions(InvocationContext invocationContext, IFileManagementCl
             throw new PluginMisconfigurationException("Target language must be specified. Please check your input and try again");
         }
 
-        var file = await _fileManagementClient.DownloadAsync(Input.File);
+        var file = await fileManagementClient.DownloadAsync(Input.File);
         var memporyStream = new MemoryStream();
         await file.CopyToAsync(memporyStream);
         memporyStream.Position = 0;
@@ -125,7 +123,7 @@ public class XliffActions(InvocationContext invocationContext, IFileManagementCl
         }
 
         var xliffStream = xliffDocument.ConvertToXliff();
-        var outputFile = await _fileManagementClient.UploadAsync(xliffStream, MediaTypeNames.Text.Xml, Input.File.Name);
+        var outputFile = await fileManagementClient.UploadAsync(xliffStream, MediaTypeNames.Text.Xml, Input.File.Name);
         return new XliffResponse
         {
             AverageMetric = response.Results.Average(x => x.Score),
