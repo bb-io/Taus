@@ -1,0 +1,55 @@
+<xliff srcLang="en" trgLang="de" version="2.2" xmlns:mda="urn:oasis:names:tc:xliff:metadata:2.0" xmlns:slr="urn:oasis:names:tc:xliff:sizerestriction:2.0" xmlns:memsource="http://www.memsource.com/xliff2.0/1.0" memsource:wfLevel="1" xmlns="urn:oasis:names:tc:xliff:document:2.2">
+  <file id="lqRcjmj0D1z6h1Fh3_dc2:0-9" canResegment="no" original="Goal Setting (OKR)_en-US.html" memsource:taskId="lqRcjmj0D1z6h1Fh3_dc2">
+    <slr:profiles generalProfile="xliff:codepoints" />
+    <unit id="0" memsource:tGroupBegin="0" memsource:tGroupEnd="0">
+      <segment id="0">
+        <source>Goal Setting (OKR)</source>
+        <target>Zielsetzung (OKR)</target>
+      </segment>
+    </unit>
+    <unit id="1" memsource:tGroupBegin="1" memsource:tGroupEnd="1">
+      <segment id="1">
+        <source>Set clear goals, track progress, and drive success with a focused, strategic approach.</source>
+        <target>Setzen Sie sich klare Ziele, verfolgen Sie den Fortschritt und fördern Sie den Erfolg mit einem fokussierten, strategischen Ansatz.</target>
+      </segment>
+    </unit>
+    <unit id="2" memsource:tGroupBegin="2" memsource:tGroupEnd="2">
+      <segment id="2">
+        <source>Set clear goals, track progress, and drive success with a focused, strategic approach.</source>
+        <target>Setzen Sie sich klare Ziele, verfolgen Sie den Fortschritt und fördern Sie den Erfolg mit einem fokussierten, strategischen Ansatz.</target>
+      </segment>
+    </unit>
+    <unit id="3" memsource:tGroupBegin="3" memsource:tGroupEnd="5">
+      <segment id="3">
+        <source>The Goal Setting (OKRs) Blueprint helps leadership teams define, refine, and finalize Objectives, Key Results, and Initiatives for the fiscal year.</source>
+        <target>Der Goal Setting (OKRs) Blueprint hilft Führungsteams, Ziele, Key Results und Initiativen für das Geschäftsjahr zu definieren, zu verfeinern und abzuschließen.</target>
+      </segment>
+      <segment id="4">
+        <source>It provides a structured process from vision-setting to execution, ensuring clarity, alignment, and accountability.</source>
+        <target>Es bietet einen strukturierten Prozess von der Visionsfindung bis zur Ausführung, der Klarheit, Ausrichtung und Verantwortlichkeit gewährleistet.</target>
+      </segment>
+      <segment id="5">
+        <source>Through collaborative workshops, planning tools, and structured working boards, teams transform ideas into actionable goals that drive company success.</source>
+        <target>Durch kollaborative Workshops, Planungstools und strukturierte Arbeitsboards verwandeln Teams Ideen in umsetzbare Ziele, die den Unternehmenserfolg vorantreiben.</target>
+      </segment>
+    </unit>
+    <unit id="4" memsource:tGroupBegin="6" memsource:tGroupEnd="9">
+      <segment id="6">
+        <source>What are Miro Blueprints?</source>
+        <target>Was sind Miro-Blaupausen?</target>
+      </segment>
+      <segment id="7">
+        <source>They are comprehensive collections of multiple templates organized in a single space to guide teams through various workflows or processes.</source>
+        <target>Es handelt sich um umfassende Sammlungen mehrerer Vorlagen, die an einem einzigen Ort organisiert sind, um Teams durch verschiedene Workflows oder Prozesse zu führen.</target>
+      </segment>
+      <segment id="8">
+        <source>These Blueprints bring together a set of customizable templates that cater to different stages of a project, helping teams streamline tasks, improve alignment, and ensure that no important step is missed.</source>
+        <target>Diese Blueprints enthalten eine Reihe anpassbarer Vorlagen, die auf die verschiedenen Phasen eines Projekts zugeschnitten sind und Teams dabei helfen, Aufgaben zu rationalisieren, die Ausrichtung zu verbessern und sicherzustellen, dass kein wichtiger Schritt übersehen wird.</target>
+      </segment>
+      <segment id="9">
+        <source>By centralizing essential resources in one space, Miro Blueprints make collaboration more efficient, offering teams a structured approach to planning, execution, and tracking progress in a visual and interactive way.</source>
+        <target>Durch die Zentralisierung wichtiger Ressourcen an einem Ort machen Miro Blueprints die Zusammenarbeit effizienter und bieten Teams einen strukturierten Ansatz für die Planung, Ausführung und Verfolgung des Fortschritts auf visuelle und interaktive Weise.</target>
+      </segment>
+    </unit>
+  </file>
+</xliff>
