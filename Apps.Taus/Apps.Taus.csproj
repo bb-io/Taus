@@ -4,7 +4,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Product>TAUS</Product>
-    <Version>1.2.6</Version>
+    <Version>1.2.7</Version>
     <Description>Provides real-time MT quality scores.</Description>
     <AssemblyName>Apps.Taus</AssemblyName>
   </PropertyGroup>

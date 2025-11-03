@@ -1,4 +1,5 @@
 using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.SDK.Blueprints.Interfaces.Review;
 
 namespace Apps.Taus.Models.Response;
 
@@ -15,7 +16,7 @@ public class EstimationResponse
     public string Label { get; set; } = string.Empty;
 }
 
-public class EstimateResult
+public class EstimateResult : IReviewTextOutput
 {
     [DefinitionIgnore]
     public MetricInfo Metric { get; set; } = new();

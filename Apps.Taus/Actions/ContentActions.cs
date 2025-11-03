@@ -1,17 +1,20 @@
-﻿using Apps.Taus.DataSourceHandlers;
+﻿using Apps.Taus.Api;
+using Apps.Taus.Constants;
+using Apps.Taus.DataSourceHandlers;
 using Apps.Taus.Invocables;
 using Apps.Taus.Models.Request;
 using Apps.Taus.Models.Response;
-using Apps.Taus.Utils;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using Blackbird.Applications.SDK.Blueprints;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Filters.Enums;
 using Blackbird.Filters.Extensions;
 using Blackbird.Filters.Transformations;
 using Blackbird.Filters.Xliff.Xliff1;
+using RestSharp;
 
 namespace Apps.Taus.Actions;
 
@@ -19,112 +22,140 @@ namespace Apps.Taus.Actions;
 public class ContentActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : TausInvocable(invocationContext)
 {
+    [BlueprintActionDefinition(BlueprintAction.ReviewFile)]
     [Action("Review content",
         Description = "Estimate translated content returned from other content processing actions")]
     public async Task<ContentReviewResponse> EstimateContent([ActionParameter] EstimateContentRequest input)
     {
-        return await ErrorHandler.ExecuteWithErrorHandlingAsync(async () =>
+        var stream = await fileManagementClient.DownloadAsync(input.File);
+        var memoryStream = new MemoryStream();
+        await stream.CopyToAsync(memoryStream);
+        memoryStream.Position = 0;
+
+        var bytes = memoryStream.ToArray();
+        var contentString = System.Text.Encoding.UTF8.GetString(bytes);
+
+        var content = Transformation.Parse(contentString, input.File.Name);
+        if (content == null)
         {
-            var stream = await fileManagementClient.DownloadAsync(input.File);
-            var memoryStream = new MemoryStream();
-            await stream.CopyToAsync(memoryStream);
-            memoryStream.Position = 0;
-            
-            var bytes = memoryStream.ToArray();
-            var contentString = System.Text.Encoding.UTF8.GetString(bytes);
-            
-            var content = Transformation.Parse(contentString, input.File.Name);
-            if (content == null)
+            throw new PluginApplicationException(
+                "Something went wrong parsing this XLIFF file. Please send a copy of this file to the team for inspection!");
+        }
+
+        if (content.SourceLanguage == null)
+        {
+            throw new PluginMisconfigurationException(
+                "The source language is not defined yet. Please assign the source language in this action.");
+        }
+
+        if (content.TargetLanguage == null)
+        {
+            throw new PluginMisconfigurationException(
+                "The target language is not defined yet. Please assign the target language in this action.");
+        }
+
+        var srcLanguage = FindTausLanguage(content.SourceLanguage);
+        var trgLanguage = FindTausLanguage(content.TargetLanguage);
+
+        var processedSegmentsCount = 0;
+        var finalizedSegmentsCount = 0;
+        var riskySegmentsCount = 0;
+        float totalScore = 0f;
+
+        var segments = content.GetUnits().SelectMany(x => x.Segments).ToList();
+        var segmentsToProcess = segments.Where(x => !x.IsIgnorbale && x.State != SegmentState.Final);
+        foreach (var segment in segmentsToProcess)
+        {
+            if (segment == null) continue;
+            var source = segment.GetSource();
+            var target = segment.GetTarget();
+            if (target == null) continue;
+            var estimate = await PerformEstimateRequest(source, srcLanguage, target, trgLanguage, input.Threshhold);
+
+            var result = estimate.EstimateResult?.Score;
+            if (result == null)
             {
-                throw new PluginApplicationException(
-                    "Something went wrong parsing this XLIFF file. Please send a copy of this file to the team for inspection!");
-            }
-            
-            if (content.SourceLanguage == null)
-            {
-                throw new PluginMisconfigurationException(
-                    "The source language is not defined yet. Please assign the source language in this action.");
-            }
-            
-            if (content.TargetLanguage == null)
-            {
-                throw new PluginMisconfigurationException(
-                    "The target language is not defined yet. Please assign the target language in this action.");
-            }
-
-            var srcLanguage = FindTausLanguage(content.SourceLanguage);
-            var trgLanguage = FindTausLanguage(content.TargetLanguage);
-
-            var processedSegmentsCount = 0;
-            var finalizedSegmentsCount = 0;
-            var riskySegmentsCount = 0;
-            float totalScore = 0f;
-
-            var segments = content.GetUnits().SelectMany(x => x.Segments).ToList();
-            var segmentsToProcess = segments.Where(x => !x.IsIgnorbale && x.State != SegmentState.Final);
-            foreach (var segment in segmentsToProcess)
-            {
-                if (segment == null) continue;
-                var source = segment.GetSource();
-                var target = segment.GetTarget();
-                if (target == null) continue;
-                var estimate = await PerformEstimateRequest(source, srcLanguage, target, trgLanguage, input.Threshhold);
-
-                var result = estimate.EstimateResult?.Score;
-                if (result == null)
-                {
-                    continue;
-                }
-
-                var score = result.Value;
-                processedSegmentsCount++;
-                totalScore += score;
-
-                if (score >= input.Threshhold)
-                {
-                    segment.State = SegmentState.Final;
-                    finalizedSegmentsCount++;
-                }
-                else
-                {
-                    riskySegmentsCount++;
-                }
+                continue;
             }
 
-            Stream streamResult;
-            if (input.OutputFileHandling == "original")
+            var score = result.Value;
+            processedSegmentsCount++;
+            totalScore += score;
+
+            if (score >= input.Threshhold)
             {
-                if (Xliff1Serializer.IsXliff1(contentString))
-                {
-                    var xliff1String = Xliff1Serializer.Serialize(content);
-                    streamResult = xliff1String.ToStream();
-                }
-                else
-                {
-                    var targetContent = content.Target();
-                    streamResult = targetContent.Serialize().ToStream();
-                }
+                segment.State = SegmentState.Final;
+                finalizedSegmentsCount++;
             }
             else
             {
-                streamResult = content.Serialize().ToStream();
+                riskySegmentsCount++;
             }
-            
-            var finalFile =
-                await fileManagementClient.UploadAsync(streamResult, input.File.ContentType, input.File.Name);
+        }
 
-            return new ContentReviewResponse
+        Stream streamResult;
+        if (input.OutputFileHandling == "original")
+        {
+            if (Xliff1Serializer.IsXliff1(contentString))
             {
-                File = finalFile,
-                TotalSegmentsFinalized = finalizedSegmentsCount,
-                TotalSegmentsProcessed = processedSegmentsCount,
-                TotalSegmentsUnderThreshhold = riskySegmentsCount,
-                AverageMetric = processedSegmentsCount > 0 ? (totalScore / processedSegmentsCount) : totalScore,
-                PercentageSegmentsUnderThreshhold = processedSegmentsCount > 0
-                    ? ((float)riskySegmentsCount / (float)processedSegmentsCount)
-                    : riskySegmentsCount,
-            };
-        });
+                var xliff1String = Xliff1Serializer.Serialize(content);
+                streamResult = xliff1String.ToStream();
+            }
+            else
+            {
+                var targetContent = content.Target();
+                streamResult = targetContent.Serialize().ToStream();
+            }
+        }
+        else
+        {
+            streamResult = content.Serialize().ToStream();
+        }
+
+        var finalFile =
+            await fileManagementClient.UploadAsync(streamResult, input.File.ContentType, input.File.Name);
+
+        return new ContentReviewResponse
+        {
+            File = finalFile,
+            TotalSegmentsFinalized = finalizedSegmentsCount,
+            TotalSegmentsProcessed = processedSegmentsCount,
+            TotalSegmentsUnderThreshhold = riskySegmentsCount,
+            AverageMetric = processedSegmentsCount > 0 ? (totalScore / processedSegmentsCount) : totalScore,
+            PercentageSegmentsUnderThreshhold = processedSegmentsCount > 0
+                ? ((float)riskySegmentsCount / (float)processedSegmentsCount)
+                : riskySegmentsCount,
+        };
+    }
+
+    [BlueprintActionDefinition(BlueprintAction.ReviewText)]
+    [Action("Review text", Description = "Estimates translated text")]
+    public async Task<EstimationResponse> EstimateTextContent([ActionParameter] EstimateTextContentRequest input)
+    {
+        var request = new TausRequest(ApiEndpoints.EstimateV2, Method.Post, Creds)
+           .AddJsonBody(new EstimationRequestV2
+           {
+               Source = new()
+               {
+                   Value = input.SourceText,
+                   Language = input.SourceLanguage
+               },
+               Target = new()
+               {
+                   Value = input.TargetText,
+                   Language = input.TargetLanguage
+               },
+               Label = input.Label,
+               ApeConfig = input.ApplyApe.HasValue && input.ApplyApe.Value ? new ApeConfig
+               {
+                   Threshold = input.ApeThreshold ?? 1,
+                   LowThreshold = input.ApeLowThreshold ?? 0,
+                   UseRag = input.UseRag ?? false
+               } : null
+           });
+
+        var response = await Client.ExecuteWithErrorHandling<EstimationResponse>(request);
+        return response;
     }
 
     private async Task<EstimationResponse> PerformEstimateRequest(string source, string sourceLanguage, string target,
