@@ -34,11 +34,11 @@ Before you can connect you need to make sure that:
 - **Review text** Estimates translated text
 
 > Supported languages can be found [here](https://developer.taus.net/). TAUS' sandbox environment only supports :
-- English (en)
-- French (fr)
-- German (de)
-- Italian (it)
-- Spanish (es)
+> - English (en)
+> - French (fr)
+> - German (de)
+> - Italian (it)
+> - Spanish (es)
 
 
 ### XLIFF files (deprecated, use Content actions instead)
