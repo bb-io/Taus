@@ -20,4 +20,18 @@ public class ContentActionsTests : TestBase
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
         Assert.IsNotNull(result);
     }
+
+    [TestMethod]
+    public async Task EstimateTextContent_ValidXliff_Success()
+    {
+        var actions = new ContentActions(InvocationContext, FileManager);
+        var result = await actions.EstimateTextContent(new EstimateTextContentRequest { 
+        SourceText="Hello",
+        SourceLanguage="en",
+        TargetText="Hola",
+        TargetLanguage="es"});
+
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+        Assert.IsNotNull(result);
+    }
 }
