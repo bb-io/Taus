@@ -28,18 +28,20 @@ Before you can connect you need to make sure that:
 
 ## Actions
 
-### Segments
+### Content
 
-- **Estimate** Gets quality estimation data for a single segment specifying: - Source text - Source language - Target text - Target language -
-  Supported languages can be found [here](https://developer.taus.net/). TAUS' sandbox environment only supports :
+- **Review content** Estimates translated content returned from other content processing actions
+- **Review text** Estimates translated text
 
-- English (en)
-- French (fr)
-- German (de)
-- Italian (it)
-- Spanish (es)
+> Supported languages can be found [here](https://developer.taus.net/). TAUS' sandbox environment only supports :
+> - English (en)
+> - French (fr)
+> - German (de)
+> - Italian (it)
+> - Spanish (es)
 
-### XLIFF files
+
+### XLIFF files (deprecated, use Content actions instead)
 
 - **Estimate XLIFF** Gets quality estimation data for all segments in an XLIFF 1.2 file. Mandatory input data include the translated XLIFF file, source and target language values. As an output, an Average Score is provided, which is the average of the quality scores for all segments in the file. Additionally, all translation units get appeneded with their individual score which is added to the `extradata` attribute in the XLIFF file. Optionally, you can add Threshold, New Target State and Condition input parameters to the Blackbird action to change the target state value of segments meeting the desired criteria.
 

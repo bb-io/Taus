@@ -3,6 +3,7 @@ using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.SDK.Blueprints.Interfaces.Review;
+using Newtonsoft.Json;
 
 namespace Apps.Taus.Models.Request;
 
@@ -11,6 +12,7 @@ public class EstimateContentRequest : IReviewFileInput
     public FileReference File { get; set; }
 
     [DefinitionIgnore]
+    [JsonIgnore]
     public string? TargetLanguage { get; set; }
 
     [Display("Score threshold", Description = "All segments above this score will automatically be finalized")]
