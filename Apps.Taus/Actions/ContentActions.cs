@@ -163,8 +163,7 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
     {
         await Task.Delay(800);
 
-        var estimateActions = new EstimateActions(InvocationContext);
-        return await estimateActions.Estimate(new EstimateInput
+        return await Estimate(new EstimateInput
         {
             Source = source,
             SourceLanguage = sourceLanguage,
@@ -172,6 +171,34 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
             TargetLanguage = targetLanguage,
             Threshold = threshold
         });
+    }
+
+    private async Task<EstimationResponse> Estimate([ActionParameter] EstimateInput estimateInput)
+    {
+        var request = new TausRequest(ApiEndpoints.EstimateV2, Method.Post, Creds)
+            .AddJsonBody(new EstimationRequestV2
+            {
+                Source = new()
+                {
+                    Value = estimateInput.Source,
+                    Language = estimateInput.SourceLanguage
+                },
+                Target = new()
+                {
+                    Value = estimateInput.Target,
+                    Language = estimateInput.TargetLanguage
+                },
+                Label = estimateInput.Label,
+                ApeConfig = estimateInput.ApplyApe.HasValue && estimateInput.ApplyApe.Value ? new ApeConfig
+                {
+                    Threshold = estimateInput.ApeThreshold ?? 1,
+                    LowThreshold = estimateInput.ApeLowThreshold ?? 0,
+                    UseRag = estimateInput.UseRag ?? false
+                } : null
+            });
+
+        var response = await Client.ExecuteWithErrorHandling<EstimationResponse>(request);
+        return response;
     }
 
     private static string FindTausLanguage(string language)
