@@ -155,7 +155,7 @@
     <unit id="u1" name="/html[1]/body[1]/div[1]/h1[1]">
       <segment id="1" state="translated">
         <source>The Loire Valley</source>
-        <target>De Loirevallei</target>
+        <target>De Loiredal</target>
       </segment>
     </unit>
     <unit id="u2" name="/html[1]/body[1]/div[2]/h1[1]">

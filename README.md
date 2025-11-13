@@ -1,4 +1,4 @@
-# Blackbird.io Taus
+# Blackbird.io TAUS EPIC
 
 Blackbird is the new automation backbone for the language technology industry. Blackbird provides enterprise-scale automation and orchestration with a simple no-code/low-code platform. Blackbird enables ambitious organizations to identify, vet and automate as many processes as possible. Not just localization workflows, but any business and IT process. This repository represents an application that is deployable on Blackbird and usable inside the workflow editor.
 
@@ -6,7 +6,7 @@ Blackbird is the new automation backbone for the language technology industry. B
 
 <!-- begin docs -->
 
-TAUS EPIC API helps users assess the quality of machine-translated content and make informed decisions about its suitability for various purposes.
+TAUS EPIC helps users assess the quality of machine-translated content and make informed decisions about its suitability for various purposes.
 
 ## Before setting up
 
@@ -17,7 +17,7 @@ Before you can connect you need to make sure that:
 
 ## Connecting
 
-1. Navigate to apps and search for TAUS.
+1. Navigate to apps and search for TAUS EPIC.
 2. Click _Add Connection_.
 3. Name your connection for future reference e.g. 'My TAUS connection'.
 4. Fill in the Base URL for your TAUS connection. This is most likely either `https://api.taus.net` or `https://api.sandbox.taus.net`
@@ -28,10 +28,15 @@ Before you can connect you need to make sure that:
 
 ## Actions
 
-### Content
+### Review
 
-- **Review content** Estimates translated content returned from other content processing actions
-- **Review text** Estimates translated text
+- **Review** review a translated content file returned from other content processing actions. Adds quality scores to each segment.
+- **Review text** reviews translated text and returns a quality score
+
+### Editing
+
+- **Edit** a translated file. This action assumes you have previously translated content in Blackbird through any translation action. Only looks at translated segments, first applies an MTQE pass and when the score is below the threshold will do an edit. Remarks about edits are added to segments as notes.
+- **Edit text** given a source segment and translated target segment, responds with an edited version of the target segment taking into account typical mistakes.
 
 > Supported languages can be found [here](https://developer.taus.net/). TAUS' sandbox environment only supports :
 > - English (en)
@@ -39,25 +44,6 @@ Before you can connect you need to make sure that:
 > - German (de)
 > - Italian (it)
 > - Spanish (es)
-
-
-### XLIFF files (deprecated, use Content actions instead)
-
-- **Estimate XLIFF** Gets quality estimation data for all segments in an XLIFF 1.2 file. Mandatory input data include the translated XLIFF file, source and target language values. As an output, an Average Score is provided, which is the average of the quality scores for all segments in the file. Additionally, all translation units get appeneded with their individual score which is added to the `extradata` attribute in the XLIFF file. Optionally, you can add Threshold, New Target State and Condition input parameters to the Blackbird action to change the target state value of segments meeting the desired criteria.
-
-Examples:
-
-Setting the optional input values as shown in the image below will result in all segments with a score above 0.9 to have their target state values updated to "final".
-
-![TAUSoptionalinput1](image/README/TAUSoptionalinput1.png)
-
-Similarly, the setup below will cause all the segments with a quality score below or equal to 0.6 to have their target state value changed to "needs-review-translation".
-
-![TAUSoptionalinput2](image/README/TAUSoptionalinput2.png)
-
-The files should meet the following requirements:
-- max 1000 segments per file
-- file size maximum 262 kb
 
 ## Feedback
 

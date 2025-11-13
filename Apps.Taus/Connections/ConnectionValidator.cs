@@ -1,7 +1,6 @@
 ﻿using Apps.Taus.Api;
 using Apps.Taus.Constants;
-using Apps.Taus.Models.Request;
-using Apps.Taus.Models.Response;
+using Apps.Taus.Models.Estimate;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Connections;
 using RestSharp;
@@ -32,7 +31,7 @@ public class ConnectionValidator : IConnectionValidator
 
         try
         {
-            var response = await client.ExecuteWithErrorHandling<EstimationResponse>(request);
+            var response = await client.ExecuteWithErrorHandling<EstimateOutput>(request);
             return new()
             {
                 IsValid = true

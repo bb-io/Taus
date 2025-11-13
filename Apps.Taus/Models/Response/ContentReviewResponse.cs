@@ -22,4 +22,7 @@ public class ContentReviewResponse : IReviewFileOutput
 
     [Display("Percentage segments under threshold")]
     public float PercentageSegmentsUnderThreshhold { get; set; }
+
+    [Display("Billed characters")]
+    public int BilledCharacters { get; set; }
 }

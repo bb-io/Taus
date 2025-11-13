@@ -6,6 +6,8 @@ using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
 using Blackbird.Applications.Sdk.Utils.Extensions.String;
 using Blackbird.Applications.Sdk.Utils.RestSharp;
 using Newtonsoft.Json;
+using Polly;
+using Polly.Retry;
 using RestSharp;
 using System.Net;
 
@@ -13,8 +15,9 @@ namespace Apps.Taus.Api;
 
 public class TausClient : BlackBirdRestClient
 {
-    private const int MaxRetries = 5;
-    private const int InitialDelayMs = 1000;
+
+    private const int RetryCount = 5;
+    private const int WaitBeforeRetrySeconds = 2;
 
     public TausClient(IEnumerable<AuthenticationCredentialsProvider> creds) : base(new RestClientOptions()
     {
@@ -53,42 +56,25 @@ public class TausClient : BlackBirdRestClient
         return new PluginApplicationException(errorMessage);
     }
 
+    private readonly AsyncRetryPolicy<RestResponse> _retryPolicy = Policy
+        .HandleResult<RestResponse>(response => response.StatusCode == HttpStatusCode.TooManyRequests)
+        .WaitAndRetryAsync(RetryCount, _ => TimeSpan.FromSeconds(WaitBeforeRetrySeconds));
+
     public override async Task<T> ExecuteWithErrorHandling<T>(RestRequest request)
     {
-        string content = (await ExecuteWithErrorHandling(request)).Content;
-        T val = JsonConvert.DeserializeObject<T>(content, JsonSettings);
+        var response = await _retryPolicy.ExecuteAsync(() => ExecuteAsync(request));
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw ConfigureErrorException(response);
+        }
+
+        T val = JsonConvert.DeserializeObject<T>(response.Content, JsonSettings);
         if (val == null)
         {
-            throw new Exception($"Could not parse {content} to {typeof(T)}");
+            throw new Exception($"Could not parse {response.Content} to {typeof(T)}");
         }
 
         return val;
-    }
-
-    public async Task<RestResponse> ExecuteWithHandling(RestRequest request)
-    {
-        int delay = InitialDelayMs;
-        RestResponse? response = null;
-
-        for (int attempt = 1; attempt <= MaxRetries; attempt++)
-        {
-            response = await ExecuteAsync(request);
-
-            if (response.IsSuccessful)
-                return response;
-
-            if (attempt < MaxRetries &&
-                (response.StatusCode == HttpStatusCode.InternalServerError ||
-                 response.StatusCode == HttpStatusCode.ServiceUnavailable ||
-                 response.StatusCode == HttpStatusCode.BadRequest ||
-                 response.StatusCode == HttpStatusCode.TooManyRequests))
-            {
-                await Task.Delay(delay);
-                delay *= 2;
-                continue;
-            }
-            break;
-        }
-        throw ConfigureErrorException(response);
     }
 }
