@@ -1,6 +1,4 @@
-using Apps.Taus.Models;
-
-namespace Apps.Taus.Models.Request;
+namespace Apps.Taus.Models.Estimate;
 
 public class EstimationRequestV2
 {

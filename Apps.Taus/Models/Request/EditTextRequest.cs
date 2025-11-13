@@ -1,11 +1,11 @@
 ﻿using Apps.Taus.DataSourceHandlers;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
-using Blackbird.Applications.SDK.Blueprints.Interfaces.Review;
+using Blackbird.Applications.SDK.Blueprints.Interfaces.Edit;
 
 namespace Apps.Taus.Models.Request
 {
-    public class EstimateTextContentRequest : IReviewTextInput
+    public class EditTextRequest : IEditTextInput
     {
         [Display("Source text")]
         public string SourceText { get; set; }
@@ -21,12 +21,6 @@ namespace Apps.Taus.Models.Request
         [StaticDataSource(typeof(LanguageDataHandler))]
         public string TargetLanguage { get; set; }
 
-        [Display("Label")]
-        public string? Label { get; set; }
-
-        [Display("Apply APE")]
-        public bool? ApplyApe { get; set; }
-
         [Display("APE threshold")]
         public float? ApeThreshold { get; set; }
 
@@ -35,8 +29,5 @@ namespace Apps.Taus.Models.Request
 
         [Display("Use RAG")]
         public bool? UseRag { get; set; }
-
-        [Display("Threshold", Description = "Threshold score for automatic finalization")]
-        public double Threshold { get; set; } = 0.8;
     }
 }
