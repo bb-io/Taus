@@ -1,20 +1,22 @@
-﻿using Apps.Taus.Invocables;
-using Blackbird.Applications.Sdk.Common.Invocation;
-using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using Apps.Taus.Api;
+﻿using Apps.Taus.Api;
 using Apps.Taus.Constants;
+using Apps.Taus.Invocables;
 using Apps.Taus.Models.Request;
 using Apps.Taus.Models.Response;
+using Apps.Taus.Utils;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
-using RestSharp;
-using System.Net.Mime;
-using System.Text.RegularExpressions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
-using Apps.Taus.Utils;
+using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
+using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
+using Blackbird.Filters.Xliff.Xliff1;
+using Blackbird.Filters.Xliff.Xliff2;
 using Blackbird.Xliff.Utils.Extensions;
+using RestSharp;
 using System.Globalization;
+using System.Net.Mime;
+using System.Text;
 
 namespace Apps.Taus.Actions;
 
@@ -33,6 +35,15 @@ public class XliffActions(InvocationContext invocationContext, IFileManagementCl
         var file = await fileManagementClient.DownloadAsync(Input.File);
         var memporyStream = new MemoryStream();
         await file.CopyToAsync(memporyStream);
+        memporyStream.Position = 0; 
+
+        using var reader = new StreamReader(memporyStream, Encoding.UTF8, leaveOpen: true);
+        var stringContent = await reader.ReadToEndAsync();
+        if (!Input.File.ContentType.Contains("xliff") &&
+            !Xliff2Serializer.IsXliff2(stringContent) && 
+            !Xliff1Serializer.IsXliff1(stringContent))
+            throw new PluginMisconfigurationException("Expected an XLIFF file (.xlf or .xliff)");
+
         memporyStream.Position = 0;
 
         var xliffDocument = memporyStream.ConvertFromXliff();
@@ -132,8 +143,3 @@ public class XliffActions(InvocationContext invocationContext, IFileManagementCl
         };
     }
 }
-
-
-
-
-
