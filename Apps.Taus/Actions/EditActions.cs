@@ -12,6 +12,7 @@ using Blackbird.Filters.Enums;
 using Blackbird.Filters.Extensions;
 using Blackbird.Filters.Transformations;
 using Blackbird.Filters.Xliff.Xliff1;
+using Blackbird.Filters.Xliff.Xliff2;
 using Segment = Blackbird.Filters.Transformations.Segment;
 
 namespace Apps.Taus.Actions;
@@ -138,6 +139,11 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             {
                 var xliff1String = Xliff1Serializer.Serialize(content);
                 streamResult = xliff1String.ToStream();
+            }
+            if (Xliff2Serializer.IsXliff2(contentString))
+            {
+                var xliff2String = Xliff2Serializer.Serialize(content);
+                streamResult = xliff2String.ToStream();
             }
             else
             {
