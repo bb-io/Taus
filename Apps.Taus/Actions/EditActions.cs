@@ -93,10 +93,12 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         foreach (var (unit, results) in units)
         {
             float unitScore = 0;
+            var localBilledCharacters = 0;
+            var localBilledWords = 0;
             foreach (var (segment, result) in results)
             {
-                billedCharacters += result.EstimateResult.BilledCharacters;               
-
+                billedCharacters += result.EstimateResult.BilledCharacters;
+                localBilledCharacters += result.EstimateResult.BilledCharacters;
                 var score = result.EstimateResult?.Score;
                 if (score == null) continue;
 
@@ -108,6 +110,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                     finalizedSegmentsCount++;
                     var revision = result.ApeResult.ApeRevisions.Last();
                     billedWords += result.ApeResult.BilledWords;
+                    localBilledWords += result.ApeResult.BilledWords;
                     segment.SetTarget(revision.Translation);
                     segment.State = SegmentState.Final;
                     unit.Notes.Add(new Note(revision.Remarks) { Category = "epic-remark", Reference = segment.Id });
@@ -128,8 +131,15 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             unit.Quality.ProfileReference = "https://api.taus.net/2.0/estimate";
             unit.Quality.ScoreThreshold = input.Threshold;
             unit.Quality.Score = unitScore / results.Count();
-            unit.Provenance.Review.ToolReference = "https://api.taus.net/2.0/estimate";
-            unit.Provenance.Review.Tool = "TAUS EPIC";
+            unit.Provenance.Review.Tool = "TAUS APE";
+            if (localBilledWords > 0)
+            {
+                unit.AddUsage("TAUS APE", localBilledWords, UsageUnit.Words);
+            }
+            if(localBilledCharacters > 0)
+            {
+                unit.AddUsage("TAUS QE", localBilledCharacters, UsageUnit.Characters);
+            }            
         }
 
         Stream streamResult;

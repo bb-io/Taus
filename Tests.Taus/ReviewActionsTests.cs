@@ -22,6 +22,18 @@ public class ReviewActionsTests : TestBase
     }
 
     [TestMethod]
+    public async Task ReviewContent_ValidXliff_12_Success()
+    {
+        var actions = new ReviewActions(InvocationContext, FileManager);
+        var file = new FileReference { Name = "xliff_Blackbird_Demo_File_en_de.xlf" };
+
+        var result = await actions.EstimateContent(new ReviewContentRequest { File = file, Threshold = 0.7 });
+
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+        Assert.IsNotNull(result);
+    }
+
+    [TestMethod]
     public async Task ReviewContentContentful_ValidXliff_Success()
     {
         var actions = new ReviewActions(InvocationContext, FileManager);
