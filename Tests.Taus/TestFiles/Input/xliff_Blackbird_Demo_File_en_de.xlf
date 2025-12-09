@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns:bwx="https://bwx.io/ns/xlf" xmlns:its="http://www.w3.org/2005/11/its" xmlns:itsxlf="http://www.w3.org/ns/its-xliff/" its:version="2.0">
+<file bwx:wu-id="c57dabe9-0747-4ab5-ab0f-09330e97448d" original="Blackbird_Demo_File.docx" source-language="en" target-language="de" datatype="x-undefined">
+<body>
+<trans-unit id="db612b05-d0a0-43e3-907e-ea811b812159-0-P244D057-tu2" bwx:ts-id="db612b05-d0a0-43e3-907e-ea811b812159" xml:space="preserve">
+<source xml:lang="en">Powering the Future of Content Operations</source>
+<target xml:lang="de">Die Zukunft des Content-Managements gestalten</target>
+<alt-trans origin="bwx-tm"><target xml:lang="de">Die Zukunft des Content-Managements gestalten</target>
+</alt-trans>
+</trans-unit>
+<trans-unit id="3735b382-af8b-428e-899b-91eba3516937-1-P244D057-tu3" bwx:ts-id="3735b382-af8b-428e-899b-91eba3516937" xml:space="preserve">
+<source xml:lang="en">Blackbird<g id="1" ctype="x-link;color:0563C1;underline:single;" equiv-text="&lt;hyperlink1>"> </g>is Language Infrastructure designed for <g id="2" ctype="x-bold;" equiv-text="&lt;run2>">multilingual</g> workflow orchestration and AI process automation.</source>
+<target xml:lang="de">Blackbird<g id="1" ctype="x-link;color:0563C1;underline:single;" equiv-text="&lt;hyperlink1>"> </g>ist eine Sprachinfrastruktur, die für <g id="2" ctype="x-bold;" equiv-text="&lt;run2>">mehrsprachige</g> Workflow-Orchestrierung und KI-Prozessautomatisierung entwickelt wurde.</target>
+<alt-trans origin="bwx-tm"><target xml:lang="de">Blackbird<g id="1" ctype="x-link;color:0563C1;underline:single;" equiv-text="&lt;hyperlink1>"> </g>ist eine Sprachinfrastruktur, die für <g id="2" ctype="x-bold;" equiv-text="&lt;run2>">mehrsprachige</g> Workflow-Orchestrierung und KI-Prozessautomatisierung entwickelt wurde.</target>
+</alt-trans>
+</trans-unit>
+<trans-unit id="4912148f-358c-46ae-b129-df35cbeace92-2-P244D057-tu5" bwx:ts-id="4912148f-358c-46ae-b129-df35cbeace92" xml:space="preserve">
+<source xml:lang="en">We are on a mission to transform Content Operations.</source>
+<target xml:lang="de">Wir haben es uns zur Aufgabe gemacht, Content Operations zu transformieren.</target>
+<alt-trans origin="bwx-tm"><target xml:lang="de">Wir haben es uns zur Aufgabe gemacht, Content Operations zu transformieren.</target>
+</alt-trans>
+</trans-unit>
+<trans-unit id="70c3c046-b859-429d-a8e2-b5350eeda959-3-P244D057-tu6" bwx:ts-id="70c3c046-b859-429d-a8e2-b5350eeda959" xml:space="preserve">
+<source xml:lang="en">Blackbird enables automation and seamless analytics between the apps, data, content, participants and devices used in multilingual content operations.</source>
+<target xml:lang="de">Blackbird ermöglicht Automatisierung und nahtlose Analysen zwischen den Apps, Daten, Inhalten, Teilnehmern und Geräten, die in mehrsprachigen Inhaltsoperationen verwendet werden.</target>
+<alt-trans origin="bwx-tm"><target xml:lang="de">Blackbird ermöglicht Automatisierung und nahtlose Analysen zwischen den Apps, Daten, Inhalten, Teilnehmern und Geräten, die in mehrsprachigen Inhaltsoperationen verwendet werden.</target>
+</alt-trans>
+</trans-unit>
+<trans-unit id="6714a715-c814-4975-b2ac-6fd89f844b81-4-P244D057-tu7" bwx:ts-id="6714a715-c814-4975-b2ac-6fd89f844b81" xml:space="preserve">
+<source xml:lang="en">Our Vision</source>
+<target xml:lang="de">Unsere Vision</target>
+<alt-trans origin="bwx-tm"><target xml:lang="de">Unsere Vision</target>
+</alt-trans>
+</trans-unit>
+<trans-unit id="2077d101-c9e6-40db-8466-893ce7d75f32-5-P244D057-tu8" bwx:ts-id="2077d101-c9e6-40db-8466-893ce7d75f32" xml:space="preserve">
+<source xml:lang="en">Our vision is to redefine Content Operations by seamlessly blending AI with human expertise and oversight.</source>
+<target xml:lang="de">Unsere Vision ist es, Content Operations neu zu definieren, indem wir KI nahtlos mit menschlicher Expertise und Aufsicht verbinden.</target>
+<alt-trans origin="bwx-tm"><target xml:lang="de">Unsere Vision ist es, Content Operations neu zu definieren, indem wir KI nahtlos mit menschlicher Expertise und Aufsicht verbinden.</target>
+</alt-trans>
+</trans-unit>
+</body>
+</file>
+</xliff>

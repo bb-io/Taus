@@ -86,9 +86,11 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         foreach (var (unit, results) in units)
         {
             float unitScore = 0;
+            var localBilledCharacters = 0;
             foreach (var (segment, result) in results)
             {
                 billedCharacters += result.EstimateResult.BilledCharacters;
+                localBilledCharacters += result.EstimateResult.BilledCharacters;
                 var score = result.EstimateResult?.Score;
 
                 if (score == null) continue;
@@ -111,6 +113,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
             unit.Quality.ProfileReference = "https://api.taus.net/2.0/estimate";
             unit.Quality.ScoreThreshold = input.Threshold;
             unit.Quality.Score = unitScore / results.Count();
+            unit.AddUsage("TAUS QE", localBilledCharacters, UsageUnit.Characters);
         }
 
         Stream streamResult;
