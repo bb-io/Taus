@@ -28,6 +28,7 @@ public class ReviewActionsTests : TestBase
         var file = new FileReference { Name = "xliff_Blackbird_Demo_File_en_de.xlf" };
 
         var result = await actions.EstimateContent(new ReviewContentRequest { File = file, Threshold = 0.7 });
+        Assert.AreNotEqual(0, result.TotalSegmentsProcessed);
 
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
         Assert.IsNotNull(result);

@@ -81,7 +81,8 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         }
 
         // When TAUS implements batching, this can be utilized better
-        var units = await content.GetUnits().Batch(10, x => !x.IsIgnorbale && !x.IsInitial && x.State != SegmentState.Final).Process(BatchProcess);
+        var unitsAll = content.GetUnits().ToList();
+        var units = await unitsAll.Batch(10, x => !x.IsIgnorbale && !x.IsInitial && x.State != SegmentState.Final).Process(BatchProcess);
 
         foreach (var (unit, results) in units)
         {
