@@ -34,6 +34,18 @@ public class EditActionsTests : TestBase
     }
 
     [TestMethod]
+    public async Task EditContentXtm_ValidXliff_Success()
+    {
+        var actions = new EditActions(InvocationContext, FileManager);
+        var file = new FileReference { Name = "sample-xtm-xliff-ntp.xlf" };
+
+        var result = await actions.EditContent(new EditContentRequest { File = file, Threshold = 0.8, OutputFileHandling = "original" });
+
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+        Assert.IsNotNull(result);
+    }
+
+    [TestMethod]
     public async Task EditTextContent_Success()
     {
         var actions = new EditActions(InvocationContext, FileManager);

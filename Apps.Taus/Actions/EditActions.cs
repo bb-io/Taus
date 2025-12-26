@@ -150,7 +150,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                 var xliff1String = Xliff1Serializer.Serialize(content);
                 streamResult = xliff1String.ToStream();
             }
-            if (Xliff2Serializer.IsXliff2(contentString))
+            else if (Xliff2Serializer.IsXliff2(contentString))
             {
                 var xliff2String = Xliff2Serializer.Serialize(content);
                 streamResult = xliff2String.ToStream();
