@@ -37,7 +37,7 @@ public class EditActionsTests : TestBase
     public async Task EditContentXtm_ValidXliff_Success()
     {
         var actions = new EditActions(InvocationContext, FileManager);
-        var file = new FileReference { Name = "xliff-after-xtm.xlf" };
+        var file = new FileReference { Name = "sample-xtm-xliff-ntp.xlf" };
 
         var result = await actions.EditContent(new EditContentRequest { File = file, Threshold = 0.8, OutputFileHandling = "original" });
 
