@@ -20,6 +20,7 @@ using Blackbird.Filters.Transformations;
 using Blackbird.Filters.Xliff.Xliff1;
 using Blackbird.Filters.Xliff.Xliff2;
 using RestSharp;
+using System.Net.Sockets;
 using System.Text;
 using Segment = Blackbird.Filters.Transformations.Segment;
 
@@ -249,26 +250,27 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
         foreach (var jobId in request.JobIds)
         {
-            //try
-            //{
+            try
+            {
                 var fileDownloadRequest = new TausRequest(ApiEndpoints.BatchJobDownload, Method.Get, Creds)
                     .AddUrlSegment("job_id", jobId)
-                    .AddOrUpdateHeader("Accept", "text/tab-separated-values");
+                    .AddOrUpdateHeader("Accept", mimeType);
 
-                fileDownloadRequest.CompletionOption = HttpCompletionOption.ResponseHeadersRead;
+                var fileResponse = await Client.ExecuteAsync(fileDownloadRequest);
 
-                using var stream = await Client.DownloadStreamAsync(fileDownloadRequest)
-                    ?? throw new PluginApplicationException($"Coudn't fetch file stream.");
+                if (!fileResponse.IsSuccessful || fileResponse.RawBytes is null)
+                    throw new PluginApplicationException($"Download failed. {fileResponse.ErrorMessage}");
 
+                using var stream = new MemoryStream(fileResponse.RawBytes);
                 var uploadedFileRef = await fileManagementClient.UploadAsync(stream, mimeType, $"{jobId}.tsv");
 
                 downloadedReferences.Add(uploadedFileRef);
-            //}
-            //catch (Exception ex)
-            //{
-            //    errors.Add($"Job ID {jobId}: {ex.Message}");
-            //}
-        }
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"Job ID {jobId}: {ex.Message}");
+            }
+    }
 
         return new()
         {
