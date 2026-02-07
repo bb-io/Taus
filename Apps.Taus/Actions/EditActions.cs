@@ -243,23 +243,37 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         // TODO Test if it's possible to switch to MXLIFF as XLIFF v1.2 to remove the need for transformation files
         //      and it solves the issue with tabs and new lines in the content.
 
-        var downloadReferences = new List<FileReference>();
+        var downloadedReferences = new List<FileReference>();
+        var errors = new List<string>();
         var mimeType = "text/tab-separated-values";
 
         foreach (var jobId in request.JobIds)
         {
-            var fileUrl = ApiEndpoints.BatchJobDownload.Replace("{job_id}", jobId);
+            try
+            {
+                var fileDownloadRequest = new TausRequest(ApiEndpoints.BatchJobDownload, Method.Get, Creds)
+                    .AddUrlSegment("job_id", jobId)
+                    .AddOrUpdateHeader("Accept", "text/tab-separated-values");
 
-            var downloadRequest = new HttpRequestMessage(HttpMethod.Get, fileUrl);
-            downloadRequest.Headers.Add("api-key", Creds.Get(CredsNames.ApiKey).Value);
-            downloadRequest.Headers.Add("Accept", mimeType);
+                fileDownloadRequest.CompletionOption = HttpCompletionOption.ResponseHeadersRead;
 
-            downloadReferences.Add(new FileReference(downloadRequest, $"{jobId}.tsv", mimeType));
+                using var stream = await Client.DownloadStreamAsync(fileDownloadRequest)
+                    ?? throw new PluginApplicationException($"Coudn't fetch file stream.");
+
+                var uploadedFileRef = await fileManagementClient.UploadAsync(stream, mimeType, $"{jobId}.tsv");
+
+                downloadedReferences.Add(uploadedFileRef);
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"Job ID {jobId}: {ex.Message}");
+            }
         }
 
         return new()
         {
-            ProcessedFiles = downloadReferences,
+            ProcessedFiles = downloadedReferences,
+            Errors = errors,
         };
     }
 

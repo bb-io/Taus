@@ -1,15 +1,15 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Blackbird.Applications.Sdk.Common;
 
 namespace Apps.Taus.Models.Response;
 
 public class BatchPollingResponse
 {
-    [Display(Name = "Completed job IDs")]
+    [Display("Completed job IDs")]
     public IEnumerable<string> CompletedJobIds { get; set; } = [];
 
-    [Display(Name = "Failed job IDs")]
+    [Display("Failed job IDs")]
     public IEnumerable<string> FailedJobIds { get; set; } = [];
 
-    [Display(Name = "Expired job IDs")]
+    [Display("Expired job IDs")]
     public IEnumerable<string> ExpiredJobIds { get; set; } = [];
 }
