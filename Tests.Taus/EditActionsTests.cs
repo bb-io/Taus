@@ -58,4 +58,20 @@ public class EditActionsTests : TestBase
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
         Assert.IsNotNull(result);
     }
+
+    [TestMethod]
+    public async Task EditContentInBackground_ValidXliff_Success()
+    {
+        var actions = new EditActions(InvocationContext, FileManager);
+        var request = new EditContentInBackgroundRequest {
+            Files = [new FileReference { Name = "About Us_en.html.xliff" }],
+            Threshold = 0.8,
+        };
+
+        var result = await actions.EditContentInBackground(request);
+
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+        Assert.IsTrue(result.JobIds.Any());
+        Assert.IsFalse(result.JobCreationErrors.Any());
+    }
 }

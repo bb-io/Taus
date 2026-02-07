@@ -1,18 +1,26 @@
-﻿using Apps.Taus.Invocables;
+﻿using Apps.Taus.Api;
+using Apps.Taus.Constants;
+using Apps.Taus.Invocables;
 using Apps.Taus.Models.Estimate;
 using Apps.Taus.Models.Request;
 using Apps.Taus.Models.Response;
+using Apps.Taus.Models.TausApiResponseDtos;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
+using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
 using Blackbird.Applications.SDK.Blueprints;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
+using Blackbird.Filters.Constants;
 using Blackbird.Filters.Enums;
 using Blackbird.Filters.Extensions;
 using Blackbird.Filters.Transformations;
 using Blackbird.Filters.Xliff.Xliff1;
 using Blackbird.Filters.Xliff.Xliff2;
+using RestSharp;
+using System.Text;
 using Segment = Blackbird.Filters.Transformations.Segment;
 
 namespace Apps.Taus.Actions;
@@ -114,7 +122,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                     segment.SetTarget(revision.Translation);
                     segment.State = SegmentState.Final;
                     unit.Notes.Add(new Note(revision.Remarks) { Category = "epic-remark", Reference = segment.Id });
-                    unitScore += result.ApeResult.Score;                    
+                    unitScore += result.ApeResult.Score;
                 }
                 else if (score >= input.Threshold)
                 {
@@ -136,10 +144,10 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             {
                 unit.AddUsage("TAUS APE", localBilledWords, UsageUnit.Words);
             }
-            if(localBilledCharacters > 0)
+            if (localBilledCharacters > 0)
             {
                 unit.AddUsage("TAUS QE", localBilledCharacters, UsageUnit.Characters);
-            }            
+            }
         }
 
         Stream streamResult;
@@ -173,7 +181,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         {
             File = finalFile,
             TotalSegmentsReviewed = processedSegmentsCount,
-            TotalSegmentsUpdated = updatedCount,      
+            TotalSegmentsUpdated = updatedCount,
             TotalSegmentsFinalized = finalizedSegmentsCount,
             TotalSegmentsUnderThreshhold = riskySegmentsCount,
             BilledCharacters = billedCharacters,
@@ -198,5 +206,122 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         });
 
         return new EditTextOutput(response, input.TargetText);
+    }
+
+    [Action("Edit in background", Description = "Edits translated text in the background. Use a checkpoint to recover results when they are ready. APE runs asynchronously via OpenAI’s Batch API and may take up to 24 hours, although results are often available significantly earlier.")]
+    public async Task<ContentEditInBackgroundResponse> EditContentInBackground([ActionParameter] EditContentInBackgroundRequest input)
+    {
+        var jobIds = new List<string>();
+        var transformationFileRefs = new List<FileReference>();
+        var jobCreationErrors = new List<string>();
+
+        foreach (var file in input.Files)
+        {
+            try
+            {
+                var (jobId, transformation) = await CreateEditBackgroundJob(file, input);
+                jobIds.Add(jobId);
+                transformationFileRefs.Add(transformation);
+            }
+            catch (Exception ex)
+            {
+                jobCreationErrors.Add($"{file.Name}: {ex.Message}");
+            }
+        }
+
+        return new()
+        {
+            JobIds = jobIds,
+            TransformationFiles = transformationFileRefs,
+            JobCreationErrors = jobCreationErrors,
+        };
+    }
+
+    [Action("Download background file", Description = "Download content that was processed in the background. This action should be called after the background process is completed.")]
+    public async Task<BackgroundContentResponse> DownloadContentFromBackground([ActionParameter] BackgroundDownloadRequest request)
+    {
+        // TODO Test if it's possible to switch to MXLIFF as XLIFF v1.2 to remove the need for transformation files
+        //      and it solves the issue with tabs and new lines in the content.
+
+        var downloadReferences = new List<FileReference>();
+        var mimeType = "text/tab-separated-values";
+
+        foreach (var jobId in request.JobIds)
+        {
+            var fileUrl = ApiEndpoints.BatchJobDownload.Replace("{job_id}", jobId);
+
+            var downloadRequest = new HttpRequestMessage(HttpMethod.Get, fileUrl);
+            downloadRequest.Headers.Add("api-key", Creds.Get(CredsNames.ApiKey).Value);
+            downloadRequest.Headers.Add("Accept", mimeType);
+
+            downloadReferences.Add(new FileReference(downloadRequest, $"{jobId}.tsv", mimeType));
+        }
+
+        return new()
+        {
+            ProcessedFiles = downloadReferences,
+        };
+    }
+
+    private async Task<(string, FileReference)> CreateEditBackgroundJob(FileReference file, EditContentInBackgroundRequest input)
+    {
+        using var stream = await fileManagementClient.DownloadAsync(file);
+        using var reader = new StreamReader(stream);
+        var contentString = await reader.ReadToEndAsync();
+
+        var content = Transformation.Parse(contentString, file.Name)
+            ?? throw new PluginApplicationException("Something went wrong parsing this bilingual file. Please send a copy of this file to the team for inspection!");
+
+        var sourceLanguage = input.SourceLanguage ?? content.SourceLanguage;
+        var targetLanguage = input.TargetLanguage ?? content.TargetLanguage;
+
+        if (sourceLanguage is null)
+            throw new PluginMisconfigurationException("The source language is not defined in the bilingual file. Please assign the source language in this action.");
+
+        if (targetLanguage is null)
+            throw new PluginMisconfigurationException("The target language is not defined in the bilingual file. Please assign the target language in this action.");
+
+        using var tsvStream = new MemoryStream();
+        using var tsvWriter = new StreamWriter(tsvStream, new UTF8Encoding(false), leaveOpen: true);
+
+        var unitsToProcess = content.GetUnits().Where(x => !x.IsInitial && x.State != SegmentState.Final);
+
+        foreach (var unit in unitsToProcess)
+        {
+            foreach (var segment in unit.Segments)
+            {
+                if (segment.IsIgnorbale || segment.State == SegmentState.Final)
+                    continue;
+
+                // TODO Align with TAUS on how to handle tabs and new lines
+                var sourceText = segment.GetSource().Replace("\t", " ").Replace("\n", " ");
+                var targetText = segment.GetTarget().Replace("\t", " ").Replace("\n", " ");
+                tsvWriter.WriteLine($"{sourceText}\t{targetText}");
+            }
+        }
+
+        await tsvWriter.FlushAsync();
+        tsvStream.Position = 0;
+
+        var batchRequest = new TausRequest(ApiEndpoints.EstimateBatchJob, Method.Post, Creds)
+            .AddParameter("source_language", sourceLanguage)
+            .AddParameter("target_language", targetLanguage)
+            .AddParameter("ape_threshold", input.Threshold)
+            .AddFile("file", () => tsvStream, Path.GetFileNameWithoutExtension(file.Name) + ".tsv", "text/tab-separated-values");
+
+        // TODO Pass error messages back to user when HTTP response is not 200
+        var bathResponse = await Client.ExecuteWithErrorHandling<EstimateBatchJob>(batchRequest);
+
+        if (!string.IsNullOrWhiteSpace(bathResponse.ErrorMessage))
+            throw new PluginApplicationException(bathResponse.ErrorMessage);
+
+        content.MetaData.Add(new("TausEstimateBatchJobID", bathResponse.JobId) { Category = [Meta.Categories.Blackbird] });
+
+        var transformationFileRef = await fileManagementClient.UploadAsync(
+            Xliff2Serializer.Serialize(content).ToStream(),
+            "application/xliff+xml",
+            content.XliffFileName);
+
+        return (bathResponse.JobId, transformationFileRef);
     }
 }
