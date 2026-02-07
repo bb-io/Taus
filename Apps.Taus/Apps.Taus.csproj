@@ -12,8 +12,8 @@
     <PackageReference Include="Blackbird.Applications.SDK.Blueprints" Version="1.0.1" />
     <PackageReference Include="Blackbird.Applications.SDK.Extensions.FileManagement" Version="1.1.0" />
     <PackageReference Include="Blackbird.Applications.Sdk.Utils" Version="1.0.26" />
-    <PackageReference Include="Blackbird.Filters" Version="1.1.50" />
-    <PackageReference Include="Polly" Version="8.6.4" />
+    <PackageReference Include="Blackbird.Filters" Version="1.1.51" />
+    <PackageReference Include="Polly" Version="8.6.5" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="image\icon.png">
