@@ -241,9 +241,6 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     [Action("Download background file", Description = "Download content that was processed in the background. This action should be called after the background process is completed.")]
     public async Task<BackgroundContentResponse> DownloadContentFromBackground([ActionParameter] BackgroundDownloadRequest request)
     {
-        // TODO Test if it's possible to switch to MXLIFF as XLIFF v1.2 to remove the need for transformation files
-        //      and it solves the issue with tabs and new lines in the content.
-
         var downloadedReferences = new List<FileReference>();
         var errors = new List<string>();
         var mimeType = "text/tab-separated-values";
@@ -259,7 +256,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                 var fileResponse = await Client.ExecuteAsync(fileDownloadRequest);
 
                 if (!fileResponse.IsSuccessful || fileResponse.RawBytes is null)
-                    throw new PluginApplicationException($"Download failed. {fileResponse.ErrorMessage}");
+                    throw new PluginApplicationException(!string.IsNullOrWhiteSpace(fileResponse.ErrorMessage) ? fileResponse.ErrorMessage : "Download failed.");
 
                 using var stream = new MemoryStream(fileResponse.RawBytes);
                 var uploadedFileRef = await fileManagementClient.UploadAsync(stream, mimeType, $"{jobId}.tsv");
@@ -270,7 +267,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             {
                 errors.Add($"Job ID {jobId}: {ex.Message}");
             }
-    }
+        }
 
         return new()
         {
@@ -309,7 +306,6 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                 if (segment.IsIgnorbale || segment.State == SegmentState.Final)
                     continue;
 
-                // TODO Align with TAUS on how to handle tabs and new lines
                 var sourceText = segment.GetSource().Replace("\t", " ").Replace("\n", " ");
                 var targetText = segment.GetTarget().Replace("\t", " ").Replace("\n", " ");
                 tsvWriter.WriteLine($"{sourceText}\t{targetText}");
