@@ -249,8 +249,8 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
         foreach (var jobId in request.JobIds)
         {
-            try
-            {
+            //try
+            //{
                 var fileDownloadRequest = new TausRequest(ApiEndpoints.BatchJobDownload, Method.Get, Creds)
                     .AddUrlSegment("job_id", jobId)
                     .AddOrUpdateHeader("Accept", "text/tab-separated-values");
@@ -263,11 +263,11 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                 var uploadedFileRef = await fileManagementClient.UploadAsync(stream, mimeType, $"{jobId}.tsv");
 
                 downloadedReferences.Add(uploadedFileRef);
-            }
-            catch (Exception ex)
-            {
-                errors.Add($"Job ID {jobId}: {ex.Message}");
-            }
+            //}
+            //catch (Exception ex)
+            //{
+            //    errors.Add($"Job ID {jobId}: {ex.Message}");
+            //}
         }
 
         return new()
