@@ -64,7 +64,7 @@ public class EditActionsTests : TestBase
     {
         var actions = new EditActions(InvocationContext, FileManager);
         var request = new EditContentInBackgroundRequest {
-            Files = [new FileReference { Name = "About Us_en.html.xliff" }],
+            Files = [new FileReference { Name = "xliff-after-xtm.xlf" }],
             Threshold = 0.8,
         };
 
@@ -81,8 +81,25 @@ public class EditActionsTests : TestBase
         var actions = new EditActions(InvocationContext, FileManager);
         var request = new BackgroundDownloadRequest
         {
-            JobIds = ["0394f618-e41c-41c1-9d37-417c98cd6f1c"],
-            TransformationFiles = [new FileReference { Name = "About Us_en.html.xliff" }],
+            JobIds = ["d31cd848-5e14-4e7b-9cfb-81dfbfcbcd24"],
+            TransformationFiles = [new FileReference { Name = "background-transformation.xlf" }],
+        };
+
+        var result = await actions.DownloadContentFromBackground(request);
+
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+        Assert.IsTrue(result.ProcessedFiles.Any());
+    }
+
+    [TestMethod]
+    public async Task DownloadContentFromBackground_ValidXliff_Xliff1Output_Success()
+    {
+        var actions = new EditActions(InvocationContext, FileManager);
+        var request = new BackgroundDownloadRequest
+        {
+            JobIds = ["d31cd848-5e14-4e7b-9cfb-81dfbfcbcd24"],
+            TransformationFiles = [new FileReference { Name = "background-transformation.xlf" }],
+            OutputFileHandling = "xliff1",
         };
 
         var result = await actions.DownloadContentFromBackground(request);

@@ -1,7 +1,7 @@
-﻿using Blackbird.Applications.Sdk.Common;
+﻿using Apps.Taus.DataSourceHandlers;
+using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Files;
-using Blackbird.Applications.SDK.Blueprints.Handlers;
 
 namespace Apps.Taus.Models.Request;
 
@@ -14,6 +14,6 @@ public class BackgroundDownloadRequest
     public IEnumerable<FileReference> TransformationFiles { get; set; } = [];
 
     [Display("Output file handling", Description = "Determine the format of the output file. The default Blackbird behavior is to convert to XLIFF for future steps.")]
-    [StaticDataSource(typeof(ProcessFileFormatHandler))]
+    [StaticDataSource(typeof(TausOutputFileFormatDataHandler))]
     public string? OutputFileHandling { get; set; }
 }

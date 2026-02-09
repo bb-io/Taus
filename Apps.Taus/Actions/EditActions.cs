@@ -10,8 +10,8 @@ using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
-using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
 using Blackbird.Applications.SDK.Blueprints;
+using Blackbird.Applications.SDK.Extensions.FileManagement;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Filters.Constants;
 using Blackbird.Filters.Enums;
@@ -20,7 +20,9 @@ using Blackbird.Filters.Transformations;
 using Blackbird.Filters.Xliff.Xliff1;
 using Blackbird.Filters.Xliff.Xliff2;
 using RestSharp;
-using System.Net.Sockets;
+using System.Globalization;
+using System.IO;
+using System.Linq;
 using System.Text;
 using Segment = Blackbird.Filters.Transformations.Segment;
 
@@ -175,8 +177,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             streamResult = content.Serialize().ToStream();
         }
 
-        var finalFile =
-            await fileManagementClient.UploadAsync(streamResult, input.File.ContentType, input.File.Name);
+        var finalFile = await fileManagementClient.UploadAsync(streamResult, input.File.ContentType, input.File.Name);
 
         return new ContentEditResponse
         {
@@ -237,45 +238,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             JobCreationErrors = jobCreationErrors,
         };
     }
-
-    [Action("Download background file", Description = "Download content that was processed in the background. This action should be called after the background process is completed.")]
-    public async Task<BackgroundContentResponse> DownloadContentFromBackground([ActionParameter] BackgroundDownloadRequest request)
-    {
-        var downloadedReferences = new List<FileReference>();
-        var errors = new List<string>();
-        var mimeType = "text/tab-separated-values";
-
-        foreach (var jobId in request.JobIds)
-        {
-            try
-            {
-                var fileDownloadRequest = new TausRequest(ApiEndpoints.BatchJobDownload, Method.Get, Creds)
-                    .AddUrlSegment("job_id", jobId)
-                    .AddOrUpdateHeader("Accept", mimeType);
-
-                var fileResponse = await Client.ExecuteAsync(fileDownloadRequest);
-
-                if (!fileResponse.IsSuccessful || fileResponse.RawBytes is null)
-                    throw new PluginApplicationException(!string.IsNullOrWhiteSpace(fileResponse.ErrorMessage) ? fileResponse.ErrorMessage : "Download failed.");
-
-                using var stream = new MemoryStream(fileResponse.RawBytes);
-                var uploadedFileRef = await fileManagementClient.UploadAsync(stream, mimeType, $"{jobId}.tsv");
-
-                downloadedReferences.Add(uploadedFileRef);
-            }
-            catch (Exception ex)
-            {
-                errors.Add($"Job ID {jobId}: {ex.Message}");
-            }
-        }
-
-        return new()
-        {
-            ProcessedFiles = downloadedReferences,
-            Errors = errors,
-        };
-    }
-
+    
     private async Task<(string, FileReference)> CreateEditBackgroundJob(FileReference file, EditContentInBackgroundRequest input)
     {
         using var stream = await fileManagementClient.DownloadAsync(file);
@@ -297,19 +260,13 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         using var tsvStream = new MemoryStream();
         using var tsvWriter = new StreamWriter(tsvStream, new UTF8Encoding(false), leaveOpen: true);
 
-        var unitsToProcess = content.GetUnits().Where(x => !x.IsInitial && x.State != SegmentState.Final);
-
-        foreach (var unit in unitsToProcess)
+        foreach (var (unit, segment) in GetSegmentsToProcess(content))
         {
-            foreach (var segment in unit.Segments)
-            {
-                if (segment.IsIgnorbale || segment.State == SegmentState.Final)
-                    continue;
+            var sourceText = segment.GetSource().Replace("\t", " ").Replace("\n", " ");
+            var targetText = segment.GetTarget().Replace("\t", " ").Replace("\n", " ");
+            tsvWriter.WriteLine($"{sourceText}\t{targetText}");
 
-                var sourceText = segment.GetSource().Replace("\t", " ").Replace("\n", " ");
-                var targetText = segment.GetTarget().Replace("\t", " ").Replace("\n", " ");
-                tsvWriter.WriteLine($"{sourceText}\t{targetText}");
-            }
+            unit.Quality.ScoreThreshold = input.Threshold;
         }
 
         await tsvWriter.FlushAsync();
@@ -327,7 +284,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         if (!string.IsNullOrWhiteSpace(bathResponse.ErrorMessage))
             throw new PluginApplicationException(bathResponse.ErrorMessage);
 
-        content.MetaData.Add(new("TausEstimateBatchJobID", bathResponse.JobId) { Category = [Meta.Categories.Blackbird] });
+        content.MetaData.Add(new(TransformationTausMetadata.Type, bathResponse.JobId) { Category = [TransformationTausMetadata.Category] });
 
         var transformationFileRef = await fileManagementClient.UploadAsync(
             Xliff2Serializer.Serialize(content).ToStream(),
@@ -335,5 +292,138 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             content.XliffFileName);
 
         return (bathResponse.JobId, transformationFileRef);
+    }
+
+    [Action("Download background file", Description = "Download content that was processed in the background. This action should be called after the background process is completed.")]
+    public async Task<BackgroundContentResponse> DownloadContentFromBackground([ActionParameter] BackgroundDownloadRequest request)
+    {
+        var processedFilesRefs = new List<FileReference>();
+        var errors = new List<string>();
+
+        foreach (var transformationFileRef in request.TransformationFiles)
+        {
+            var transformationStream = await fileManagementClient.DownloadAsync(transformationFileRef);
+            using var reader = new StreamReader(transformationStream);
+            var contentString = await reader.ReadToEndAsync();
+            var transformation = Transformation.Parse(contentString, transformationFileRef.Name);
+
+            var expectedJobId = transformation.MetaData.Find(m => 
+                m.Category.Contains(TransformationTausMetadata.Category)
+                && m.Type == TransformationTausMetadata.Type);
+
+            if (string.IsNullOrWhiteSpace(expectedJobId?.Value))
+            {
+                errors.Add($"File {transformationFileRef.Name} does not contain the expected metadata to link it to a TAUS batch job.");
+                continue;
+            }
+
+            try
+            {
+                var appliedTransformation = await ApplyEdits(transformation, expectedJobId.Value, request.OutputFileHandling);
+                processedFilesRefs.Add(appliedTransformation);
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"Applying edits for Job ID {expectedJobId.Value} failed: {ex.Message}");
+                continue;
+            }
+        }
+
+        return new()
+        {
+            ProcessedFiles = processedFilesRefs,
+            Errors = errors,
+        };
+    }
+
+    private async Task<FileReference> ApplyEdits(
+        Transformation transformation,
+        string completedJobId,
+        string? outputFileHandling)
+    {
+        var fileDownloadRequest = new TausRequest(ApiEndpoints.BatchJobDownload, Method.Get, Creds)
+            .AddUrlSegment("job_id", completedJobId)
+            .AddOrUpdateHeader("Accept", "text/tab-separated-values");
+
+        var batchResponse = await Client.ExecuteAsync(fileDownloadRequest);
+            
+        if (!batchResponse.IsSuccessful || batchResponse.Content is null)
+            throw new PluginApplicationException(!string.IsNullOrWhiteSpace(batchResponse.ErrorMessage) ? batchResponse.ErrorMessage : "Download failed.");
+
+        // TODO Columnts depend whether APE was applied or not
+
+        var segments = batchResponse.Content
+            .Split("\n", StringSplitOptions.RemoveEmptyEntries)
+            .Skip(1) // Skip Header
+            .Select(line => line.Split('\t'))
+            .Select(SegmentsFromBatchApe.FromArray)
+            .ToList() ?? [];
+
+        if (segments.Count == 0)
+            throw new PluginApplicationException("The batch result file did not contain any segments.");
+
+        foreach (var ((originalUnit, originalSegment), processedSegment) in GetSegmentsToProcess(transformation).Zip(segments))
+        {
+            originalUnit.Quality.Score = processedSegment.ApeScore ?? processedSegment.Score;
+            originalUnit.Provenance.Review.Tool = "TAUS";
+
+            if (originalUnit.Quality.Score < originalUnit.Quality.ScoreThreshold)
+                continue;
+
+            originalSegment.State = SegmentState.Reviewed;
+            originalUnit.Notes.Add(new Note("Scored above threshold by TAUS") { Reference = originalSegment.Id });
+
+            // The APE result is returned only if the post-edited translation improves the QE score
+            if (!string.IsNullOrEmpty(processedSegment.ApeResult))
+            {
+                originalSegment.SetTarget(processedSegment.ApeResult);
+                originalUnit.Notes.Add(new Note(processedSegment.Remarks ?? "Edited by APE") { Reference = originalSegment.Id });
+            }
+        }
+
+        // TODO Also return billed characters and words in the response both together and per file
+
+        FileReference resultFile;
+        if (outputFileHandling == "original")
+        {
+            var targetContent = transformation.Target();
+            resultFile = await fileManagementClient.UploadAsync(
+                targetContent.Serialize().ToStream(),
+                targetContent.OriginalMediaType,
+                targetContent.OriginalName);
+        }
+        else if (outputFileHandling == "xliff1")
+        {
+            resultFile = await fileManagementClient.UploadAsync(
+                Xliff1Serializer.Serialize(transformation).ToStream(),
+                MediaTypes.Xliff,
+                transformation.XliffFileName);
+        }
+        else
+        {
+            resultFile = await fileManagementClient.UploadAsync(
+                transformation.Serialize().ToStream(),
+                MediaTypes.Xliff,
+                transformation.XliffFileName);
+        }
+
+        return resultFile;
+    }
+
+    private static IEnumerable<(Unit, Segment)> GetSegmentsToProcess(Transformation transformation)
+    {
+        foreach (var unit in transformation.GetUnits())
+        {
+            if (unit.IsInitial || unit.State == SegmentState.Final)
+                continue;
+
+            foreach (var segment in unit.Segments)
+            {
+                if (segment.IsIgnorbale || segment.State == SegmentState.Final)
+                    continue;
+
+                yield return (unit, segment);
+            }
+        }
     }
 }
