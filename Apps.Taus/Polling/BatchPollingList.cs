@@ -50,9 +50,9 @@ public class BatchPollingList(InvocationContext invocationContext) : TausInvocab
             FlyBird = true,
             Result = new()
             {
-                CompletedJobIds = expectedJobsByStatus.GetValueOrDefault("COMPLETED", []),
-                FailedJobIds = expectedJobsByStatus.GetValueOrDefault("FAILED", []),
-                ExpiredJobIds = expectedJobsByStatus.GetValueOrDefault("EXPIRED", []),
+                CompletedJobIds = expectedJobsByStatus.GetValueOrDefault("COMPLETED", []).ToList(),
+                FailedJobIds = expectedJobsByStatus.GetValueOrDefault("FAILED", []).ToList(),
+                ExpiredJobIds = expectedJobsByStatus.GetValueOrDefault("EXPIRED", []).ToList(),
             },
             Memory = new()
             {
