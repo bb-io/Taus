@@ -1,5 +1,6 @@
 ﻿using Apps.Taus.Constants;
 using Apps.Taus.Models.Response.Error;
+using Apps.Taus.Models.TausApiResponseDtos;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
@@ -76,5 +77,28 @@ public class TausClient : BlackBirdRestClient
         }
 
         return val;
+    }
+
+    public async Task<List<T>> Paginate<T>(RestRequest request)
+    {
+        var allItems = new List<T>();
+        int currentPage = 1;
+        int totalPages;
+
+        do
+        {
+            request.AddOrUpdateParameter("page", currentPage);
+            var response = await ExecuteWithErrorHandling<PaginatedResponse<T>>(request);
+
+            if (response is null)
+                break;
+
+            allItems.AddRange(response.Items);
+            totalPages = response.TotalPages;
+
+            currentPage++;
+        } while (currentPage <= totalPages);
+
+        return allItems;
     }
 }

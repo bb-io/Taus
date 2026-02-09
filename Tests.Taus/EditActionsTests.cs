@@ -58,4 +58,53 @@ public class EditActionsTests : TestBase
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
         Assert.IsNotNull(result);
     }
+
+    [TestMethod]
+    public async Task EditContentInBackground_ValidXliff_Success()
+    {
+        var actions = new EditActions(InvocationContext, FileManager);
+        var request = new EditContentInBackgroundRequest {
+            Files = [new FileReference { Name = "xliff-after-xtm.xlf" }],
+            Threshold = 0.8,
+        };
+
+        var result = await actions.EditContentInBackground(request);
+
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+        Assert.IsTrue(result.JobIds.Any());
+        Assert.IsFalse(result.JobCreationErrors.Any());
+    }
+
+    [TestMethod]
+    public async Task DownloadContentFromBackground_ValidXliff_Success()
+    {
+        var actions = new EditActions(InvocationContext, FileManager);
+        var request = new BackgroundDownloadRequest
+        {
+            JobIds = ["d31cd848-5e14-4e7b-9cfb-81dfbfcbcd24"],
+            TransformationFiles = [new FileReference { Name = "background-transformation.xlf" }],
+        };
+
+        var result = await actions.DownloadContentFromBackground(request);
+
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+        Assert.IsTrue(result.ProcessedFiles.Any());
+    }
+
+    [TestMethod]
+    public async Task DownloadContentFromBackground_ValidXliff_Xliff1Output_Success()
+    {
+        var actions = new EditActions(InvocationContext, FileManager);
+        var request = new BackgroundDownloadRequest
+        {
+            JobIds = ["d31cd848-5e14-4e7b-9cfb-81dfbfcbcd24"],
+            TransformationFiles = [new FileReference { Name = "background-transformation.xlf" }],
+            OutputFileHandling = "xliff1",
+        };
+
+        var result = await actions.DownloadContentFromBackground(request);
+
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+        Assert.IsTrue(result.ProcessedFiles.Any());
+    }
 }

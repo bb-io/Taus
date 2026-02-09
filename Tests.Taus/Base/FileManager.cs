@@ -1,12 +1,8 @@
 ﻿using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Tests.Taus.Base;
+
 public class FileManager : IFileManagementClient
 {
     private readonly string _inputFolder;
@@ -46,5 +42,12 @@ public class FileManager : IFileManagementClient
         }
 
         return Task.FromResult(new FileReference { Name = fileName, ContentType = contentType });
+    }
+
+    public FileReference ReferOutputAsync(FileReference reference)
+    {
+        var newFileName = Path.Combine(_inputFolder, "..", "Output", reference.Name);
+        Assert.IsTrue(File.Exists(newFileName), $"File not found at: {newFileName}");
+        return new FileReference { Name = newFileName };
     }
 }
