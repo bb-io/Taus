@@ -298,6 +298,8 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     public async Task<BackgroundContentResponse> DownloadContentFromBackground([ActionParameter] BackgroundDownloadRequest request)
     {
         var processedFilesRefs = new List<FileReference>();
+        var totalBilledWords = 0;
+        var totalBilledCharacters = 0;
         var errors = new List<string>();
 
         foreach (var transformationFileRef in request.TransformationFiles)
@@ -319,8 +321,10 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
             try
             {
-                var appliedTransformation = await ApplyEdits(transformation, expectedJobId.Value, request.OutputFileHandling);
+                var (appliedTransformation, billedWords, billedCharacters) = await ApplyEdits(transformation, expectedJobId.Value, request.OutputFileHandling);
                 processedFilesRefs.Add(appliedTransformation);
+                totalBilledWords += billedWords;
+                totalBilledCharacters += billedCharacters;
             }
             catch (Exception ex)
             {
@@ -332,15 +336,18 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         return new()
         {
             ProcessedFiles = processedFilesRefs,
+            TotalBilledWords = totalBilledWords,
+            TotalBilledCharacters = totalBilledCharacters,
             Errors = errors,
         };
     }
 
-    private async Task<FileReference> ApplyEdits(
-        Transformation transformation,
-        string completedJobId,
-        string? outputFileHandling)
+    private async Task<(FileReference, int billedWords, int billedCharacters)> ApplyEdits(
+        Transformation transformation, string completedJobId, string? outputFileHandling)
     {
+        var billedWords = 0;
+        var billedCharacters = 0;
+
         var fileDownloadRequest = new TausRequest(ApiEndpoints.BatchJobDownload, Method.Get, Creds)
             .AddUrlSegment("job_id", completedJobId)
             .AddOrUpdateHeader("Accept", "text/tab-separated-values");
@@ -349,8 +356,6 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             
         if (!batchResponse.IsSuccessful || batchResponse.Content is null)
             throw new PluginApplicationException(!string.IsNullOrWhiteSpace(batchResponse.ErrorMessage) ? batchResponse.ErrorMessage : "Download failed.");
-
-        // TODO Columnts depend whether APE was applied or not
 
         var segments = batchResponse.Content
             .Split("\n", StringSplitOptions.RemoveEmptyEntries)
@@ -378,10 +383,11 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             {
                 originalSegment.SetTarget(processedSegment.ApeResult);
                 originalUnit.Notes.Add(new Note(processedSegment.Remarks ?? "Edited by APE") { Reference = originalSegment.Id });
+                billedWords += processedSegment.BilledWords ?? 0;
             }
+            else
+                billedCharacters += processedSegment.BilledCharacters ?? 0;
         }
-
-        // TODO Also return billed characters and words in the response both together and per file
 
         FileReference resultFile;
         if (outputFileHandling == "original")
@@ -407,7 +413,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                 transformation.XliffFileName);
         }
 
-        return resultFile;
+        return (resultFile, billedWords, billedCharacters);
     }
 
     private static IEnumerable<(Unit, Segment)> GetSegmentsToProcess(Transformation transformation)

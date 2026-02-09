@@ -10,4 +10,10 @@ public class BackgroundContentResponse
 
     [Display("Errors")]
     public IEnumerable<string> Errors { get; set; } = [];
+
+    [Display("Billed words (APE)")]
+    public int TotalBilledWords { get; set; }
+
+    [Display("Billed total characters (QE)")]
+    public int TotalBilledCharacters { get; set; }
 }
