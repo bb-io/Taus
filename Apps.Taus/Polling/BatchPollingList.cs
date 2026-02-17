@@ -4,6 +4,7 @@ using Apps.Taus.Invocables;
 using Apps.Taus.Models.Response;
 using Apps.Taus.Models.TausApiResponseDtos;
 using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common.Polling;
 using RestSharp;
@@ -18,6 +19,9 @@ public class BatchPollingList(InvocationContext invocationContext) : TausInvocab
         PollingEventRequest<BatchMemory> request,
         [PollingEventParameter, Display("Job IDs")] IEnumerable<string> jobIds)
     {
+        if (jobIds.Any() != true)
+            throw new PluginMisconfigurationException("At least one Job ID must be provided.");
+
         var terminalStatuses = new[] { "COMPLETED", "FAILED", "EXPIRED" };
         var lastPollingTime = DateTime.UtcNow;
         var noFlightResponse = new PollingEventResponse<BatchMemory, BatchPollingResponse>()
