@@ -1,6 +1,7 @@
 ﻿using Apps.Taus.Api;
 using Apps.Taus.Constants;
 using Apps.Taus.Invocables;
+using Apps.Taus.Models.Request;
 using Apps.Taus.Models.Response;
 using Apps.Taus.Models.TausApiResponseDtos;
 using Blackbird.Applications.Sdk.Common;
@@ -17,9 +18,9 @@ public class BatchPollingList(InvocationContext invocationContext) : TausInvocab
     [PollingEvent("On background job finished", "Triggered when a job reaches a terminal state (completed/failed/cancelled).")]
     public async Task<PollingEventResponse<BatchMemory, BatchPollingResponse>> OnBatchFinished(
         PollingEventRequest<BatchMemory> request,
-        [PollingEventParameter, Display("Job IDs")] IEnumerable<string> jobIds)
+        [PollingEventParameter] OnBatchFinishedRequest input)
     {
-        var jobIdsUniqueSet = jobIds.ToHashSet();
+        var jobIdsUniqueSet = input.JobIds.ToHashSet();
 
         if (jobIdsUniqueSet.Count == 0)
             throw new PluginMisconfigurationException("At least one Job ID must be provided.");
