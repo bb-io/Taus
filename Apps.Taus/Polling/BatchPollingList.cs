@@ -1,9 +1,11 @@
 ﻿using Apps.Taus.Api;
 using Apps.Taus.Constants;
 using Apps.Taus.Invocables;
+using Apps.Taus.Models.Request;
 using Apps.Taus.Models.Response;
 using Apps.Taus.Models.TausApiResponseDtos;
 using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common.Polling;
 using RestSharp;
@@ -16,8 +18,13 @@ public class BatchPollingList(InvocationContext invocationContext) : TausInvocab
     [PollingEvent("On background job finished", "Triggered when a job reaches a terminal state (completed/failed/cancelled).")]
     public async Task<PollingEventResponse<BatchMemory, BatchPollingResponse>> OnBatchFinished(
         PollingEventRequest<BatchMemory> request,
-        [PollingEventParameter, Display("Job IDs")] IEnumerable<string> jobIds)
+        [PollingEventParameter] OnBatchFinishedRequest input)
     {
+        var jobIdsUniqueSet = input.JobIds.ToHashSet();
+
+        if (jobIdsUniqueSet.Count == 0)
+            throw new PluginMisconfigurationException("At least one Job ID must be provided.");
+
         var terminalStatuses = new[] { "COMPLETED", "FAILED", "EXPIRED" };
         var lastPollingTime = DateTime.UtcNow;
         var noFlightResponse = new PollingEventResponse<BatchMemory, BatchPollingResponse>()
@@ -37,9 +44,12 @@ public class BatchPollingList(InvocationContext invocationContext) : TausInvocab
         var listJobsResponse = await Client.Paginate<EstimateBatchJob>(listJobsRequest);
 
         var expectedJobsTerminated = listJobsResponse
-            .Where(j => jobIds.Contains(j.JobId) && terminalStatuses.Contains(j.Status));
+            .Where(j => jobIdsUniqueSet.Contains(j.JobId) && terminalStatuses.Contains(j.Status))
+            .ToList();
 
-        if (expectedJobsTerminated.Select(j => j.JobId).Intersect(jobIds).Count() != jobIds.Count())
+        var expectedJobsTerminatedIdsSet = expectedJobsTerminated.Select(j => j.JobId).ToHashSet();
+
+        if (!jobIdsUniqueSet.SetEquals(expectedJobsTerminatedIdsSet))
             return noFlightResponse;
 
         return new()
