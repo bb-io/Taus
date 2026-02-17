@@ -19,7 +19,9 @@ public class BatchPollingList(InvocationContext invocationContext) : TausInvocab
         PollingEventRequest<BatchMemory> request,
         [PollingEventParameter, Display("Job IDs")] IEnumerable<string> jobIds)
     {
-        if (jobIds.Any() != true)
+        var jobIdsUniqueSet = jobIds.ToHashSet();
+
+        if (jobIdsUniqueSet.Count == 0)
             throw new PluginMisconfigurationException("At least one Job ID must be provided.");
 
         var terminalStatuses = new[] { "COMPLETED", "FAILED", "EXPIRED" };
@@ -41,9 +43,12 @@ public class BatchPollingList(InvocationContext invocationContext) : TausInvocab
         var listJobsResponse = await Client.Paginate<EstimateBatchJob>(listJobsRequest);
 
         var expectedJobsTerminated = listJobsResponse
-            .Where(j => jobIds.Contains(j.JobId) && terminalStatuses.Contains(j.Status));
+            .Where(j => jobIdsUniqueSet.Contains(j.JobId) && terminalStatuses.Contains(j.Status))
+            .ToList();
 
-        if (expectedJobsTerminated.Select(j => j.JobId).Intersect(jobIds).Count() != jobIds.Count())
+        var expectedJobsTerminatedIdsSet = expectedJobsTerminated.Select(j => j.JobId).ToHashSet();
+
+        if (!jobIdsUniqueSet.SetEquals(expectedJobsTerminatedIdsSet))
             return noFlightResponse;
 
         return new()
