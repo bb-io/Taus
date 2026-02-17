@@ -279,19 +279,19 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             .AddFile("file", () => tsvStream, Path.GetFileNameWithoutExtension(file.Name) + ".tsv", "text/tab-separated-values");
 
         // TODO Pass error messages back to user when HTTP response is not 200
-        var bathResponse = await Client.ExecuteWithErrorHandling<EstimateBatchJob>(batchRequest);
+        var batchResponse = await Client.ExecuteWithErrorHandling<EstimateBatchJob>(batchRequest);
 
-        if (!string.IsNullOrWhiteSpace(bathResponse.ErrorMessage))
-            throw new PluginApplicationException(bathResponse.ErrorMessage);
+        if (!string.IsNullOrWhiteSpace(batchResponse.ErrorMessage))
+            throw new PluginApplicationException(batchResponse.ErrorMessage);
 
-        content.MetaData.Add(new(TransformationTausMetadata.Type, bathResponse.JobId) { Category = [TransformationTausMetadata.Category] });
+        content.MetaData.Add(new(TransformationTausMetadata.Type, batchResponse.JobId) { Category = [TransformationTausMetadata.Category] });
 
         var transformationFileRef = await fileManagementClient.UploadAsync(
             Xliff2Serializer.Serialize(content).ToStream(),
             "application/xliff+xml",
             content.XliffFileName);
 
-        return (bathResponse.JobId, transformationFileRef);
+        return (batchResponse.JobId, transformationFileRef);
     }
 
     [Action("Download background file", Description = "Download content that was processed in the background. This action should be called after the background process is completed.")]
@@ -354,8 +354,10 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
         var batchResponse = await Client.ExecuteAsync(fileDownloadRequest);
             
-        if (!batchResponse.IsSuccessful || batchResponse.Content is null)
-            throw new PluginApplicationException(!string.IsNullOrWhiteSpace(batchResponse.ErrorMessage) ? batchResponse.ErrorMessage : "Download failed.");
+        if (!batchResponse.IsSuccessful || string.IsNullOrWhiteSpace(batchResponse.Content))
+            throw new PluginApplicationException(!string.IsNullOrWhiteSpace(batchResponse.ErrorMessage)
+                ? $"{batchResponse.ErrorMessage} ({batchResponse.StatusCode})."
+                : $"Batch job results download failed ({batchResponse.StatusCode}).");
 
         var segments = batchResponse.Content
             .Split("\n", StringSplitOptions.RemoveEmptyEntries)

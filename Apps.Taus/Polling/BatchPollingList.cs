@@ -19,12 +19,13 @@ public class BatchPollingList(InvocationContext invocationContext) : TausInvocab
         [PollingEventParameter, Display("Job IDs")] IEnumerable<string> jobIds)
     {
         var terminalStatuses = new[] { "COMPLETED", "FAILED", "EXPIRED" };
+        var lastPollingTime = DateTime.UtcNow;
         var noFlightResponse = new PollingEventResponse<BatchMemory, BatchPollingResponse>()
         {
             FlyBird = false,
             Memory = new()
             {
-                LastPollingTime = DateTime.UtcNow,
+                LastPollingTime = lastPollingTime,
                 Triggered = false
             }
         };
@@ -41,22 +42,18 @@ public class BatchPollingList(InvocationContext invocationContext) : TausInvocab
         if (expectedJobsTerminated.Count() != jobIds.Count())
             return noFlightResponse;
 
-        var expectedJobsByStatus = expectedJobsTerminated
-            .GroupBy(j => j.Status ?? "")
-            .ToDictionary(j => j.Key, j => j.Select(j => j.JobId));
-
         return new()
         {
             FlyBird = true,
             Result = new()
             {
-                CompletedJobIds = expectedJobsByStatus.GetValueOrDefault("COMPLETED", []).ToList(),
-                FailedJobIds = expectedJobsByStatus.GetValueOrDefault("FAILED", []).ToList(),
-                ExpiredJobIds = expectedJobsByStatus.GetValueOrDefault("EXPIRED", []).ToList(),
+                CompletedJobIds = expectedJobsTerminated.Where(j => j.Status == "COMPLETED").Select(j => j.JobId),
+                FailedJobIds = expectedJobsTerminated.Where(j => j.Status == "FAILED").Select(j => j.JobId),
+                ExpiredJobIds = expectedJobsTerminated.Where(j => j.Status == "EXPIRED").Select(j => j.JobId),
             },
             Memory = new()
             {
-                LastPollingTime = DateTime.UtcNow,
+                LastPollingTime = lastPollingTime,
                 Triggered = true
             }
         };
