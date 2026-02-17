@@ -39,7 +39,7 @@ public class BatchPollingList(InvocationContext invocationContext) : TausInvocab
         var expectedJobsTerminated = listJobsResponse
             .Where(j => jobIds.Contains(j.JobId) && terminalStatuses.Contains(j.Status));
 
-        if (expectedJobsTerminated.Count() != jobIds.Count())
+        if (expectedJobsTerminated.Select(j => j.JobId).Intersect(jobIds).Count() != jobIds.Count())
             return noFlightResponse;
 
         return new()
