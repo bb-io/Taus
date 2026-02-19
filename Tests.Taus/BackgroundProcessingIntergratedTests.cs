@@ -44,7 +44,10 @@ public class BackgroundProcessingIntergratedTests : TestBase
                 Triggered = false
             }
         };
-        var jobIds = createBatchJobResponse.JobIds;
+        var jobIds = new OnBatchFinishedRequest()
+        {
+            JobIds = createBatchJobResponse.JobIds,
+        };
 
         do
         {
@@ -54,7 +57,7 @@ public class BackgroundProcessingIntergratedTests : TestBase
             if (jobPollingResponse.FlyBird)
             {
                 Console.WriteLine("Polling output: " + JsonConvert.SerializeObject(jobPollingResponse, Formatting.Indented));
-                Assert.AreEqual(jobIds.Count(), jobPollingResponse.Result?.CompletedJobIds.Count());
+                Assert.AreEqual(jobIds.JobIds.Count(), jobPollingResponse.Result?.CompletedJobIds.Count());
                 Assert.AreEqual(0, jobPollingResponse.Result?.FailedJobIds.Count());
                 Assert.AreEqual(0, jobPollingResponse.Result?.ExpiredJobIds.Count());
                 break;
