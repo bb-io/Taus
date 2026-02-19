@@ -392,15 +392,15 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             originalSegment.State = overThresholdState;
             originalUnit.Notes.Add(new Note("Scored above threshold by TAUS") { Reference = originalSegment.Id });
 
+            billedCharacters += processedSegment.BilledCharacters ?? 0;
+
             // The APE result is returned only if the post-edited translation improves the QE score
             if (!string.IsNullOrEmpty(processedSegment.ApeResult))
             {
                 originalSegment.SetTarget(processedSegment.ApeResult);
                 originalUnit.Notes.Add(new Note(processedSegment.Remarks ?? "Edited by APE") { Reference = originalSegment.Id });
                 billedWords += processedSegment.BilledWords ?? 0;
-            }
-            else
-                billedCharacters += processedSegment.BilledCharacters ?? 0;
+            }    
         }
 
         FileReference resultFile;
