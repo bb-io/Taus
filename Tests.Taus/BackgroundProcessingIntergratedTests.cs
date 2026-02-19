@@ -3,6 +3,7 @@ using Apps.Taus.Models.Request;
 using Apps.Taus.Polling;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Polling;
+using Blackbird.Filters.Enums;
 using Newtonsoft.Json;
 using Tests.Taus.Base;
 
@@ -71,6 +72,7 @@ public class BackgroundProcessingIntergratedTests : TestBase
         {
             JobIds = createBatchJobResponse.JobIds,
             TransformationFiles = createBatchJobResponse.TransformationFiles.Select(FileManager.ReferOutputAsync),
+            OverThresholdState = SegmentStateHelper.Serialize(SegmentState.Final),
             OutputFileHandling = "xliff1",
         };
 

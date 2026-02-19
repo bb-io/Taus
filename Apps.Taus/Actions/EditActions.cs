@@ -312,6 +312,8 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         var totalBilledCharacters = 0;
         var errors = new List<string>();
 
+        var overThresholdState = SegmentStateHelper.ToSegmentState(request.OverThresholdState ?? string.Empty) ?? SegmentState.Reviewed;
+
         foreach (var transformationFileRef in request.TransformationFiles)
         {
             var transformationStream = await fileManagementClient.DownloadAsync(transformationFileRef);
@@ -331,7 +333,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
             try
             {
-                var (appliedTransformation, billedWords, billedCharacters) = await ApplyEdits(transformation, expectedJobId.Value, request.OutputFileHandling);
+                var (appliedTransformation, billedWords, billedCharacters) = await ApplyEdits(transformation, expectedJobId.Value, request.OutputFileHandling, overThresholdState);
                 processedFilesRefs.Add(appliedTransformation);
                 totalBilledWords += billedWords;
                 totalBilledCharacters += billedCharacters;
@@ -353,7 +355,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     }
 
     private async Task<(FileReference, int billedWords, int billedCharacters)> ApplyEdits(
-        Transformation transformation, string completedJobId, string? outputFileHandling)
+        Transformation transformation, string completedJobId, string? outputFileHandling, SegmentState overThresholdState)
     {
         var billedWords = 0;
         var billedCharacters = 0;
@@ -387,7 +389,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             if (originalUnit.Quality.Score < originalUnit.Quality.ScoreThreshold)
                 continue;
 
-            originalSegment.State = SegmentState.Reviewed;
+            originalSegment.State = overThresholdState;
             originalUnit.Notes.Add(new Note("Scored above threshold by TAUS") { Reference = originalSegment.Id });
 
             // The APE result is returned only if the post-edited translation improves the QE score
