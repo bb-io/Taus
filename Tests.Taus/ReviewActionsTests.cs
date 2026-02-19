@@ -15,7 +15,7 @@ public class ReviewActionsTests : TestBase
         var actions = new ReviewActions(InvocationContext, FileManager);
         var file = new FileReference { Name = "About Us_en.html.xliff" };
 
-        var result = await actions.EstimateContent(new ReviewContentRequest { File = file, Threshold = 0.8 });
+        var result = await actions.EstimateContent(new ReviewContentRequest { File = file, Threshold = 0.8f });
 
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
         Assert.IsNotNull(result);
@@ -27,7 +27,7 @@ public class ReviewActionsTests : TestBase
         var actions = new ReviewActions(InvocationContext, FileManager);
         var file = new FileReference { Name = "xliff_Blackbird_Demo_File_en_de.xlf" };
 
-        var result = await actions.EstimateContent(new ReviewContentRequest { File = file, Threshold = 0.7 });
+        var result = await actions.EstimateContent(new ReviewContentRequest { File = file, Threshold = 0.7f });
         Assert.AreNotEqual(0, result.TotalSegmentsProcessed);
 
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
@@ -40,7 +40,7 @@ public class ReviewActionsTests : TestBase
         var actions = new ReviewActions(InvocationContext, FileManager);
         var file = new FileReference { Name = "contentful.html.xliff" };
 
-        var result = await actions.EstimateContent(new ReviewContentRequest { File = file, Threshold = 0.8 });
+        var result = await actions.EstimateContent(new ReviewContentRequest { File = file, Threshold = 0.8f });
 
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
         Assert.IsNotNull(result);

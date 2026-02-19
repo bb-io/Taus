@@ -216,14 +216,18 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         var jobIds = new List<string>();
         var transformationFileRefs = new List<FileReference>();
         var jobCreationErrors = new List<string>();
+        var totalSegments = 0;
+        var processedSegments = 0;
 
         foreach (var file in input.Files)
         {
             try
             {
-                var (jobId, transformation) = await CreateEditBackgroundJob(file, input);
+                var (jobId, transformation, totalSegmentsInFile, processedSegmentsInFile) = await CreateEditBackgroundJob(file, input);
                 jobIds.Add(jobId);
                 transformationFileRefs.Add(transformation);
+                totalSegments += totalSegmentsInFile;
+                processedSegments += processedSegmentsInFile;
             }
             catch (Exception ex)
             {
@@ -236,10 +240,13 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             JobIds = jobIds,
             TransformationFiles = transformationFileRefs,
             JobCreationErrors = jobCreationErrors,
+            TotalSegments = totalSegments,
+            ProcessedSegments = processedSegments,
         };
     }
-    
-    private async Task<(string, FileReference)> CreateEditBackgroundJob(FileReference file, EditContentInBackgroundRequest input)
+
+    // TODO Rework to utilize TAUS mxliff support in batches, so we can use segment IDs to link the batch results back to the content, instead of relying on segment order
+    private async Task<(string jobId, FileReference transformationFileRef, int totalSegments, int processedSegments)> CreateEditBackgroundJob(FileReference file, EditContentInBackgroundRequest input)
     {
         using var stream = await fileManagementClient.DownloadAsync(file);
         using var reader = new StreamReader(stream);
@@ -260,6 +267,9 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         using var tsvStream = new MemoryStream();
         using var tsvWriter = new StreamWriter(tsvStream, new UTF8Encoding(false), leaveOpen: true);
 
+        var totalSegments = content.GetUnits().Select(u => u.Segments.Count).Sum();
+        var processedSegments = 0;
+
         foreach (var (unit, segment) in GetSegmentsToProcess(content))
         {
             var sourceText = segment.GetSource().Replace("\t", " ").Replace("\n", " ");
@@ -267,6 +277,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             tsvWriter.WriteLine($"{sourceText}\t{targetText}");
 
             unit.Quality.ScoreThreshold = input.Threshold;
+            processedSegments++;
         }
 
         await tsvWriter.FlushAsync();
@@ -278,7 +289,6 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             .AddParameter("ape_threshold", input.Threshold)
             .AddFile("file", () => tsvStream, Path.GetFileNameWithoutExtension(file.Name) + ".tsv", "text/tab-separated-values");
 
-        // TODO Pass error messages back to user when HTTP response is not 200
         var batchResponse = await Client.ExecuteWithErrorHandling<EstimateBatchJob>(batchRequest);
 
         if (!string.IsNullOrWhiteSpace(batchResponse.ErrorMessage))
@@ -291,7 +301,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             "application/xliff+xml",
             content.XliffFileName);
 
-        return (batchResponse.JobId, transformationFileRef);
+        return (batchResponse.JobId, transformationFileRef, totalSegments, processedSegments);
     }
 
     [Action("Download background file", Description = "Download content that was processed in the background. This action should be called after the background process is completed.")]
@@ -301,6 +311,8 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         var totalBilledWords = 0;
         var totalBilledCharacters = 0;
         var errors = new List<string>();
+
+        var overThresholdState = SegmentStateHelper.ToSegmentState(request.OverThresholdState ?? string.Empty) ?? SegmentState.Reviewed;
 
         foreach (var transformationFileRef in request.TransformationFiles)
         {
@@ -321,7 +333,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
             try
             {
-                var (appliedTransformation, billedWords, billedCharacters) = await ApplyEdits(transformation, expectedJobId.Value, request.OutputFileHandling);
+                var (appliedTransformation, billedWords, billedCharacters) = await ApplyEdits(transformation, expectedJobId.Value, request.OutputFileHandling, overThresholdState);
                 processedFilesRefs.Add(appliedTransformation);
                 totalBilledWords += billedWords;
                 totalBilledCharacters += billedCharacters;
@@ -343,7 +355,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     }
 
     private async Task<(FileReference, int billedWords, int billedCharacters)> ApplyEdits(
-        Transformation transformation, string completedJobId, string? outputFileHandling)
+        Transformation transformation, string completedJobId, string? outputFileHandling, SegmentState overThresholdState)
     {
         var billedWords = 0;
         var billedCharacters = 0;
@@ -377,7 +389,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             if (originalUnit.Quality.Score < originalUnit.Quality.ScoreThreshold)
                 continue;
 
-            originalSegment.State = SegmentState.Reviewed;
+            originalSegment.State = overThresholdState;
             originalUnit.Notes.Add(new Note("Scored above threshold by TAUS") { Reference = originalSegment.Id });
 
             // The APE result is returned only if the post-edited translation improves the QE score
@@ -422,12 +434,23 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     {
         foreach (var unit in transformation.GetUnits())
         {
-            if (unit.IsInitial || unit.State == SegmentState.Final)
+            if (unit.State == SegmentState.Reviewed || unit.State == SegmentState.Final)
                 continue;
 
             foreach (var segment in unit.Segments)
             {
                 if (segment.IsIgnorbale || segment.State == SegmentState.Final)
+                    continue;
+
+                // TEMP skip leveraged TM content that is already translated
+                if (segment.State == SegmentState.Translated)
+                {
+                    var stateQualifier = segment.TargetAttributes.FirstOrDefault(a => a.Name == "state-qualifier");
+                    if (stateQualifier is not null && stateQualifier.Value == "leveraged-tm")
+                        continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(segment.GetTarget()))
                     continue;
 
                 yield return (unit, segment);

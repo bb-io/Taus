@@ -1,4 +1,5 @@
-﻿using Blackbird.Applications.Sdk.Common;
+﻿using Apps.Taus.DataSourceHandlers;
+using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.SDK.Blueprints.Handlers;
@@ -17,15 +18,18 @@ public class EditContentRequest : IEditFileInput
     public string? OutputFileHandling { get; set; }
 
     [Display("APE threshold")]
+    [StaticDataSource(typeof(ThresholdHandler))]
     public float? ApeThreshold { get; set; }
 
     [Display("APE low threshold")]
+    [StaticDataSource(typeof(ThresholdHandler))]
     public float? ApeLowThreshold { get; set; }
 
     [Display("Use RAG")]
     public bool? UseRag { get; set; }
 
     [Display("Score Threshold", Description = "Threshold score for APE activation vs. automatic finalization")]
-    public double Threshold { get; set; } = 0.8;
+    [StaticDataSource(typeof(ThresholdHandler))]
+    public float Threshold { get; set; } = 0.85f;
 
 }

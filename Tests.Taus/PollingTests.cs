@@ -1,4 +1,5 @@
-﻿using Apps.Taus.Polling;
+﻿using Apps.Taus.Models.Request;
+using Apps.Taus.Polling;
 using Blackbird.Applications.Sdk.Common.Polling;
 using Newtonsoft.Json;
 using Tests.Taus.Base;
@@ -21,10 +22,13 @@ public class PollingTests : TestBase
                 Triggered = false
             }
         };
-        var jobIds = new[]
+        var jobIds = new OnBatchFinishedRequest()
         {
-            "0394f618-e41c-41c1-9d37-417c98cd6f1c",
-            "5f346c19-3da0-4bc8-9680-1dff71827908",
+            JobIds =
+            [
+                "0394f618-e41c-41c1-9d37-417c98cd6f1c",
+                "5f346c19-3da0-4bc8-9680-1dff71827908",
+            ]
         };
 
         // Act

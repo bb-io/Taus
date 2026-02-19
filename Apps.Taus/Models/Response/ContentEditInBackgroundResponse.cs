@@ -13,4 +13,10 @@ public class ContentEditInBackgroundResponse
 
     [Display("Errors")]
     public IEnumerable<string> JobCreationErrors { get; set; } = [];
+
+    [Display("Total segments")]
+    public int TotalSegments { get; set; }
+
+    [Display("Segments sent for editing")]
+    public int ProcessedSegments { get; set; }
 }

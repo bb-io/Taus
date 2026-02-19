@@ -22,9 +22,11 @@ namespace Apps.Taus.Models.Request
         public string TargetLanguage { get; set; }
 
         [Display("APE threshold")]
+        [StaticDataSource(typeof(ThresholdHandler))]
         public float? ApeThreshold { get; set; }
 
         [Display("APE low threshold")]
+        [StaticDataSource(typeof(ThresholdHandler))]
         public float? ApeLowThreshold { get; set; }
 
         [Display("Use RAG")]

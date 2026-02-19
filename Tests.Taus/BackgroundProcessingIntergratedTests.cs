@@ -3,6 +3,7 @@ using Apps.Taus.Models.Request;
 using Apps.Taus.Polling;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Polling;
+using Blackbird.Filters.Enums;
 using Newtonsoft.Json;
 using Tests.Taus.Base;
 
@@ -23,7 +24,7 @@ public class BackgroundProcessingIntergratedTests : TestBase
         var createBatchJobRequest = new EditContentInBackgroundRequest
         {
             Files = filesToProcess,
-            Threshold = 0.8,
+            Threshold = 0.8f,
         };
 
         var createBatchJobResponse = await actions.EditContentInBackground(createBatchJobRequest);
@@ -44,7 +45,10 @@ public class BackgroundProcessingIntergratedTests : TestBase
                 Triggered = false
             }
         };
-        var jobIds = createBatchJobResponse.JobIds;
+        var jobIds = new OnBatchFinishedRequest()
+        {
+            JobIds = createBatchJobResponse.JobIds,
+        };
 
         do
         {
@@ -54,7 +58,7 @@ public class BackgroundProcessingIntergratedTests : TestBase
             if (jobPollingResponse.FlyBird)
             {
                 Console.WriteLine("Polling output: " + JsonConvert.SerializeObject(jobPollingResponse, Formatting.Indented));
-                Assert.AreEqual(jobIds.Count(), jobPollingResponse.Result?.CompletedJobIds.Count());
+                Assert.AreEqual(jobIds.JobIds.Count(), jobPollingResponse.Result?.CompletedJobIds.Count());
                 Assert.AreEqual(0, jobPollingResponse.Result?.FailedJobIds.Count());
                 Assert.AreEqual(0, jobPollingResponse.Result?.ExpiredJobIds.Count());
                 break;
@@ -68,6 +72,7 @@ public class BackgroundProcessingIntergratedTests : TestBase
         {
             JobIds = createBatchJobResponse.JobIds,
             TransformationFiles = createBatchJobResponse.TransformationFiles.Select(FileManager.ReferOutputAsync),
+            OverThresholdState = SegmentStateHelper.Serialize(SegmentState.Final),
             OutputFileHandling = "xliff1",
         };
 
