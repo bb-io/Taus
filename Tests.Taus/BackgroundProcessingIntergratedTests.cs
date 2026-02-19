@@ -16,7 +16,7 @@ public class BackgroundProcessingIntergratedTests : TestBase
     public async Task EditContentInBackground_Works()
     {
         var actions = new EditActions(InvocationContext, FileManager);
-        var filesToProcess = new List<FileReference> { new() { Name = "xliff-after-xtm.xlf" } };
+        var filesToProcess = new List<FileReference> { new() { Name = "Sample text.html.xlf" } };
 
         //
         // Create batch processing job
