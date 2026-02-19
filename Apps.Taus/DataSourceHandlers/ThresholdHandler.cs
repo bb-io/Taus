@@ -9,11 +9,11 @@ namespace Apps.Taus.DataSourceHandlers
         {
             return new List<DataSourceItem>()
             {
-                new DataSourceItem("1.0", "1.00 | Zero-tolerance mode" ),
-                new DataSourceItem("0.95", "0.95 | Enterprise-grade caution" ),
-                new DataSourceItem("0.85", "0.85 | Trust, but verify" ),
-                new DataSourceItem("0.7", "0.70 | I'm feeling bold today" ),
-                new DataSourceItem("0.6", "0.60 | Ship it energy"),
+                new DataSourceItem("1.0", "1.0 | Zero-tolerance mode" ),
+                new DataSourceItem("0.9", "0.9 | Enterprise-grade caution" ),
+                new DataSourceItem("0.8", "0.8 | Trust, but verify" ),
+                new DataSourceItem("0.7", "0.7 | I'm feeling bold today" ),
+                new DataSourceItem("0.6", "0.6 | Ship it energy"),
             };
         }
     }
