@@ -24,7 +24,7 @@ public class BackgroundProcessingIntergratedTests : TestBase
         var createBatchJobRequest = new EditContentInBackgroundRequest
         {
             Files = filesToProcess,
-            Threshold = 0.8,
+            Threshold = 0.8f,
         };
 
         var createBatchJobResponse = await actions.EditContentInBackground(createBatchJobRequest);

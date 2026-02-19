@@ -15,7 +15,7 @@ public class EditActionsTests : TestBase
         var actions = new EditActions(InvocationContext, FileManager);
         var file = new FileReference { Name = "About Us_en.html.xliff" };
 
-        var result = await actions.EditContent(new EditContentRequest { File = file, Threshold = 0.8 });
+        var result = await actions.EditContent(new EditContentRequest { File = file, Threshold = 0.8f });
 
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
         Assert.IsNotNull(result);
@@ -27,7 +27,7 @@ public class EditActionsTests : TestBase
         var actions = new EditActions(InvocationContext, FileManager);
         var file = new FileReference { Name = "contentful.html.xliff" };
 
-        var result = await actions.EditContent(new EditContentRequest { File = file, Threshold = 0.8 });
+        var result = await actions.EditContent(new EditContentRequest { File = file, Threshold = 0.8f });
 
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
         Assert.IsNotNull(result);
@@ -39,7 +39,7 @@ public class EditActionsTests : TestBase
         var actions = new EditActions(InvocationContext, FileManager);
         var file = new FileReference { Name = "xliff-after-xtm.xlf" };
 
-        var result = await actions.EditContent(new EditContentRequest { File = file, Threshold = 0.8, OutputFileHandling = "original" });
+        var result = await actions.EditContent(new EditContentRequest { File = file, Threshold = 0.8f, OutputFileHandling = "original" });
 
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
         Assert.IsNotNull(result);
@@ -65,7 +65,7 @@ public class EditActionsTests : TestBase
         var actions = new EditActions(InvocationContext, FileManager);
         var request = new EditContentInBackgroundRequest {
             Files = [new FileReference { Name = "xliff-after-xtm.xlf" }],
-            Threshold = 0.8,
+            Threshold = 0.8f,
         };
 
         var result = await actions.EditContentInBackground(request);

@@ -14,8 +14,9 @@ public class ReviewContentRequest : IReviewFileInput
     [Display("Target language")]
     public string? TargetLanguage { get; set; }
 
-    [Display("Score threshold", Description = "All segments above this score will automatically be finalized"), StaticDataSource(typeof(ThresholdHandler))]
-    public double Threshold { get; set; }
+    [Display("Score threshold", Description = "All segments above this score will automatically be finalized")]
+    [StaticDataSource(typeof(ThresholdHandler))]
+    public float Threshold { get; set; }
     
     [Display("Output file handling", Description = "Determine the format of the output file. The default Blackbird behavior is to convert to XLIFF for future steps."), StaticDataSource(typeof(ProcessFileFormatHandler))]
     public string? OutputFileHandling { get; set; }
