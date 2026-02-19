@@ -18,18 +18,18 @@ public class EditContentRequest : IEditFileInput
     public string? OutputFileHandling { get; set; }
 
     [Display("APE threshold")]
-    [StaticDataSource(typeof(ThresholdHandler))]
+    //[StaticDataSource(typeof(ThresholdHandler))]
     public float? ApeThreshold { get; set; }
 
     [Display("APE low threshold")]
-    [StaticDataSource(typeof(ThresholdHandler))]
+    //[StaticDataSource(typeof(ThresholdHandler))]
     public float? ApeLowThreshold { get; set; }
 
     [Display("Use RAG")]
     public bool? UseRag { get; set; }
 
     [Display("Score Threshold", Description = "Threshold score for APE activation vs. automatic finalization")]
-    [StaticDataSource(typeof(ThresholdHandler))]
+    //[StaticDataSource(typeof(ThresholdHandler))]
     public float Threshold { get; set; } = 0.85f;
 
 }
