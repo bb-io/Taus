@@ -17,7 +17,7 @@ public record SegmentsFromBatchApe(
 {
     public static SegmentsFromBatchApe FromArray(string[] cols)
     {
-        double ParseDouble(string val) => double.TryParse(val, CultureInfo.InvariantCulture, out var res) ? res : 0;
+        double? ParseDouble(string val) => double.TryParse(val, CultureInfo.InvariantCulture, out var res) ? res : null;
         int? ParseInt(string? val) => int.TryParse(val, out var res) ? res : null;
 
         var index = ParseInt(cols.ElementAtOrDefault(0)) ?? 0;
@@ -31,7 +31,7 @@ public record SegmentsFromBatchApe(
                 Index: index,
                 Source: source,
                 Target: target,
-                Score: ParseDouble(cols[3]),
+                Score: ParseDouble(cols[3]) ?? 0,
                 ApeResult: null,
                 Remarks: null,
                 ApeScore: null,
@@ -46,10 +46,10 @@ public record SegmentsFromBatchApe(
                 Index: index,
                 Source: source,
                 Target: target,
-                Score: ParseDouble(cols.ElementAtOrDefault(3) ?? "0"),
+                Score: ParseDouble(cols.ElementAtOrDefault(3) ?? "") ?? 0,
                 ApeResult: cols.ElementAtOrDefault(4),
                 Remarks: cols.ElementAtOrDefault(5),
-                ApeScore: ParseDouble(cols.ElementAtOrDefault(6) ?? "0"),
+                ApeScore: ParseDouble(cols.ElementAtOrDefault(6) ?? ""),
                 BilledCharacters: ParseInt(cols.ElementAtOrDefault(7)),
                 BilledWords: ParseInt(cols.ElementAtOrDefault(8)));
         }
