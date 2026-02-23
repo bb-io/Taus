@@ -8,10 +8,10 @@ namespace Apps.Taus.Models.Request;
 public class BackgroundDownloadRequest
 {
     [Display("Job IDs")]
-    public IEnumerable<string> JobIds { get; set; } = [];
+    public IEnumerable<string> TausBackgroundJobIds { get; set; } = [];
 
     [Display("Transformation files", Description = "Expects files from background actions like 'Edit in background'.")]
-    public IEnumerable<FileReference> TransformationFiles { get; set; } = [];
+    public IEnumerable<FileReference> TausTransformationFiles { get; set; } = [];
 
     [Display("State to set above threshold", Description = "What state to set when segment is estimated to be above quality threshold. By default, 'Reviewed' state is set.")]
     [StaticDataSource(typeof(XliffStateDataSourceHandler))]

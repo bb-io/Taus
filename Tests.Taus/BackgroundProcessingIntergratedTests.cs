@@ -30,8 +30,8 @@ public class BackgroundProcessingIntergratedTests : TestBase
         var createBatchJobResponse = await actions.EditContentInBackground(createBatchJobRequest);
 
         Console.WriteLine("Created batch job output: " + JsonConvert.SerializeObject(createBatchJobResponse, Formatting.Indented));
-        Assert.IsTrue(createBatchJobResponse.JobIds.Any());
-        Assert.IsFalse(createBatchJobResponse.JobCreationErrors.Any());
+        Assert.IsTrue(createBatchJobResponse.TausBackgroundJobIds.Any());
+        Assert.IsFalse(createBatchJobResponse.TausJobCreationErrors.Any());
 
         //
         // Wait for batch job to complete
@@ -47,7 +47,7 @@ public class BackgroundProcessingIntergratedTests : TestBase
         };
         var jobIds = new OnBatchFinishedRequest()
         {
-            JobIds = createBatchJobResponse.JobIds,
+            JobIds = createBatchJobResponse.TausBackgroundJobIds,
         };
 
         do
@@ -58,9 +58,9 @@ public class BackgroundProcessingIntergratedTests : TestBase
             if (jobPollingResponse.FlyBird)
             {
                 Console.WriteLine("Polling output: " + JsonConvert.SerializeObject(jobPollingResponse, Formatting.Indented));
-                Assert.AreEqual(jobIds.JobIds.Count(), jobPollingResponse.Result?.CompletedJobIds.Count());
-                Assert.AreEqual(0, jobPollingResponse.Result?.FailedJobIds.Count());
-                Assert.AreEqual(0, jobPollingResponse.Result?.ExpiredJobIds.Count());
+                Assert.AreEqual(jobIds.JobIds.Count(), jobPollingResponse.Result?.TausCompletedJobIds.Count());
+                Assert.AreEqual(0, jobPollingResponse.Result?.TausFailedJobIds.Count());
+                Assert.AreEqual(0, jobPollingResponse.Result?.TausExpiredJobIds.Count());
                 break;
             }
         } while (true);
@@ -70,8 +70,8 @@ public class BackgroundProcessingIntergratedTests : TestBase
         //
         var request = new BackgroundDownloadRequest
         {
-            JobIds = createBatchJobResponse.JobIds,
-            TransformationFiles = createBatchJobResponse.TransformationFiles.Select(FileManager.ReferOutputAsync),
+            TausBackgroundJobIds = createBatchJobResponse.TausBackgroundJobIds,
+            TausTransformationFiles = createBatchJobResponse.TausTransformationFiles.Select(FileManager.ReferOutputAsync),
             OverThresholdState = SegmentStateHelper.Serialize(SegmentState.Final),
             OutputFileHandling = "xliff1",
         };

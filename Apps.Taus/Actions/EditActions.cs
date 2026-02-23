@@ -237,9 +237,9 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
         return new()
         {
-            JobIds = jobIds,
-            TransformationFiles = transformationFileRefs,
-            JobCreationErrors = jobCreationErrors,
+            TausBackgroundJobIds = jobIds,
+            TausTransformationFiles = transformationFileRefs,
+            TausJobCreationErrors = jobCreationErrors,
             TotalSegments = totalSegments,
             ProcessedSegments = processedSegments,
         };
@@ -317,7 +317,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         var totalBilledCharacters = 0;
         var errors = new List<string>();
 
-        foreach (var transformationFileRef in request.TransformationFiles)
+        foreach (var transformationFileRef in request.TausTransformationFiles)
         {
             var transformationStream = await fileManagementClient.DownloadAsync(transformationFileRef);
             using var reader = new StreamReader(transformationStream);

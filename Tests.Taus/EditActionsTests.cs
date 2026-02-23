@@ -71,8 +71,8 @@ public class EditActionsTests : TestBase
         var result = await actions.EditContentInBackground(request);
 
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
-        Assert.IsTrue(result.JobIds.Any());
-        Assert.IsFalse(result.JobCreationErrors.Any());
+        Assert.IsTrue(result.TausBackgroundJobIds.Any());
+        Assert.IsFalse(result.TausJobCreationErrors.Any());
     }
 
     [TestMethod]
@@ -81,8 +81,8 @@ public class EditActionsTests : TestBase
         var actions = new EditActions(InvocationContext, FileManager);
         var request = new BackgroundDownloadRequest
         {
-            JobIds = ["d31cd848-5e14-4e7b-9cfb-81dfbfcbcd24"],
-            TransformationFiles = [new FileReference { Name = "background-transformation.xlf" }],
+            TausBackgroundJobIds = ["d31cd848-5e14-4e7b-9cfb-81dfbfcbcd24"],
+            TausTransformationFiles = [new FileReference { Name = "background-transformation.xlf" }],
         };
 
         var result = await actions.DownloadContentFromBackground(request);
@@ -97,8 +97,8 @@ public class EditActionsTests : TestBase
         var actions = new EditActions(InvocationContext, FileManager);
         var request = new BackgroundDownloadRequest
         {
-            JobIds = ["d31cd848-5e14-4e7b-9cfb-81dfbfcbcd24"],
-            TransformationFiles = [new FileReference { Name = "background-transformation.xlf" }],
+            TausBackgroundJobIds = ["d31cd848-5e14-4e7b-9cfb-81dfbfcbcd24"],
+            TausTransformationFiles = [new FileReference { Name = "background-transformation.xlf" }],
             OutputFileHandling = "xliff1",
         };
 

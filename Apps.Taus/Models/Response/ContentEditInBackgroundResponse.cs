@@ -6,13 +6,13 @@ namespace Apps.Taus.Models.Response;
 public class ContentEditInBackgroundResponse
 {
     [Display("Job IDs")]
-    public IEnumerable<string> JobIds { get; set; } = [];
+    public IEnumerable<string> TausBackgroundJobIds { get; set; } = [];
 
     [Display("Transformation files")]
-    public IEnumerable<FileReference> TransformationFiles { get; set; } = [];
+    public IEnumerable<FileReference> TausTransformationFiles { get; set; } = [];
 
     [Display("Errors")]
-    public IEnumerable<string> JobCreationErrors { get; set; } = [];
+    public IEnumerable<string> TausJobCreationErrors { get; set; } = [];
 
     [Display("Total segments")]
     public int TotalSegments { get; set; }
