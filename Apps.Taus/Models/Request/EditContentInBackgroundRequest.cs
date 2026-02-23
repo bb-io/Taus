@@ -18,4 +18,11 @@ public class EditContentInBackgroundRequest
 
     [Display("Target language")]
     public string? TargetLanguage { get; set; }
+
+    [Display("Segment states to estimate", Description = "Only units with at least one segment in the selected states will be included in estimation ('initial' and 'translated' states by default).")]
+    [StaticDataSource(typeof(XliffStateDataSourceHandler))]
+    public IEnumerable<string>? EstimateUnitsWhereAllSegmentStates { get; set; }
+
+    [Display("Exlude segment state qualifiers", Description = "Segments with the specified qualifiers are excluded from editing. If no qualifiers are provided, all segments are included in the APE job. For XTM, it's recommended to use 'leveraged-tm' and 'leveraged-inherited'.")]
+    public IEnumerable<string>? ExcludeSegmentStateQualifiers { get; set; }
 }
