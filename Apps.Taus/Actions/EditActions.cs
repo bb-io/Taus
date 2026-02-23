@@ -246,7 +246,8 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     }
 
     // TODO Rework to utilize TAUS mxliff support in batches, so we can use segment IDs to link the batch results back to the content, instead of relying on segment order
-    private async Task<(string jobId, FileReference transformationFileRef, int totalSegments, int processedSegments)> CreateEditBackgroundJob(FileReference file, EditContentInBackgroundRequest input)
+    private async Task<(string jobId, FileReference transformationFileRef, int totalSegments, int processedSegments)> CreateEditBackgroundJob(
+        FileReference file, EditContentInBackgroundRequest input)
     {
         using var stream = await fileManagementClient.DownloadAsync(file);
         using var reader = new StreamReader(stream);
@@ -257,6 +258,10 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
         var sourceLanguage = input.SourceLanguage ?? content.SourceLanguage;
         var targetLanguage = input.TargetLanguage ?? content.TargetLanguage;
+        var segmentStatesToEstimate = input.EstimateUnitsWhereAllSegmentStates?
+            .Select(s => SegmentStateHelper.ToSegmentState(s) ?? SegmentState.Initial)
+            ?? [SegmentState.Initial, SegmentState.Translated];
+        var segmentStateQualifiersToExclude = input.ExcludeSegmentStateQualifiers ?? [];
 
         if (sourceLanguage is null)
             throw new PluginMisconfigurationException("The source language is not defined in the bilingual file. Please assign the source language in this action.");
@@ -270,7 +275,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         var totalSegments = content.GetUnits().Select(u => u.Segments.Count).Sum();
         var processedSegments = 0;
 
-        foreach (var (unit, segment) in GetSegmentsToProcess(content))
+        foreach (var (unit, segment) in GetSegmentsToProcess(content, segmentStatesToEstimate, segmentStateQualifiersToExclude))
         {
             var sourceText = segment.GetSource().Replace("\t", " ").Replace("\n", " ");
             var targetText = segment.GetTarget().Replace("\t", " ").Replace("\n", " ");
@@ -312,8 +317,6 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         var totalBilledCharacters = 0;
         var errors = new List<string>();
 
-        var overThresholdState = SegmentStateHelper.ToSegmentState(request.OverThresholdState ?? string.Empty) ?? SegmentState.Reviewed;
-
         foreach (var transformationFileRef in request.TransformationFiles)
         {
             var transformationStream = await fileManagementClient.DownloadAsync(transformationFileRef);
@@ -333,7 +336,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
             try
             {
-                var (appliedTransformation, billedWords, billedCharacters) = await ApplyEdits(transformation, expectedJobId.Value, request.OutputFileHandling, overThresholdState);
+                var (appliedTransformation, billedWords, billedCharacters) = await ApplyEdits(transformation, expectedJobId.Value, request);
                 processedFilesRefs.Add(appliedTransformation);
                 totalBilledWords += billedWords;
                 totalBilledCharacters += billedCharacters;
@@ -355,8 +358,14 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     }
 
     private async Task<(FileReference, int billedWords, int billedCharacters)> ApplyEdits(
-        Transformation transformation, string completedJobId, string? outputFileHandling, SegmentState overThresholdState)
+        Transformation transformation, string completedJobId, BackgroundDownloadRequest request)
     {
+        var segmentStatesToEstimate = request.EstimateUnitsWhereAllSegmentStates?
+            .Select(s => SegmentStateHelper.ToSegmentState(s) ?? SegmentState.Initial)
+            ?? [SegmentState.Initial, SegmentState.Translated];
+        var segmentStateQualifiersToExclude = request.ExcludeSegmentStateQualifiers ?? [];
+        var overThresholdState = SegmentStateHelper.ToSegmentState(request.OverThresholdState ?? string.Empty) ?? SegmentState.Reviewed;
+
         var billedWords = 0;
         var billedCharacters = 0;
 
@@ -381,7 +390,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         if (segments.Count == 0)
             throw new PluginApplicationException("The batch result file did not contain any segments.");
 
-        foreach (var ((originalUnit, originalSegment), processedSegment) in GetSegmentsToProcess(transformation).Zip(segments))
+        foreach (var ((originalUnit, originalSegment), processedSegment) in GetSegmentsToProcess(transformation, segmentStatesToEstimate, segmentStateQualifiersToExclude).Zip(segments))
         {
             originalUnit.Quality.Score = processedSegment.ApeScore ?? processedSegment.Score;
             originalUnit.Provenance.Review.Tool = "TAUS";
@@ -404,7 +413,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         }
 
         FileReference resultFile;
-        if (outputFileHandling == "original")
+        if (request.OutputFileHandling == "original")
         {
             var targetContent = transformation.Target();
             resultFile = await fileManagementClient.UploadAsync(
@@ -412,7 +421,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                 targetContent.OriginalMediaType,
                 targetContent.OriginalName);
         }
-        else if (outputFileHandling == "xliff1")
+        else if (request.OutputFileHandling == "xliff1")
         {
             resultFile = await fileManagementClient.UploadAsync(
                 Xliff1Serializer.Serialize(transformation).ToStream(),
@@ -430,7 +439,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         return (resultFile, billedWords, billedCharacters);
     }
 
-    private static IEnumerable<(Unit, Segment)> GetSegmentsToProcess(Transformation transformation)
+    private static IEnumerable<(Unit, Segment)> GetSegmentsToProcess(Transformation transformation, IEnumerable<SegmentState> segmentStatesToEstimate, IEnumerable<string> segmentStateQualifiersToExclude)
     {
         foreach (var unit in transformation.GetUnits())
         {
@@ -439,14 +448,16 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
             foreach (var segment in unit.Segments)
             {
-                if (segment.IsIgnorbale || segment.State == SegmentState.Final)
+                if (segment.IsIgnorbale)
                     continue;
 
-                // TEMP skip leveraged TM content that is already translated
-                if (segment.State == SegmentState.Translated)
+                if (segmentStatesToEstimate.Contains(segment.State ?? SegmentState.Initial) == false)
+                    continue;
+
+                if (segmentStateQualifiersToExclude.Any())
                 {
                     var stateQualifier = segment.TargetAttributes.FirstOrDefault(a => a.Name == "state-qualifier");
-                    if (stateQualifier is not null && stateQualifier.Value == "leveraged-tm")
+                    if (stateQualifier is not null && segmentStateQualifiersToExclude.Contains(stateQualifier.Value))
                         continue;
                 }
 
