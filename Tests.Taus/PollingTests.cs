@@ -24,7 +24,7 @@ public class PollingTests : TestBase
         };
         var jobIds = new OnBatchFinishedRequest()
         {
-            JobIds =
+            TausBackgroundJobIds =
             [
                 "0394f618-e41c-41c1-9d37-417c98cd6f1c",
                 "5f346c19-3da0-4bc8-9680-1dff71827908",

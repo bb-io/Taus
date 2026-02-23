@@ -20,7 +20,7 @@ public class BatchPollingList(InvocationContext invocationContext) : TausInvocab
         PollingEventRequest<BatchMemory> request,
         [PollingEventParameter] OnBatchFinishedRequest input)
     {
-        var jobIdsUniqueSet = input.JobIds.ToHashSet();
+        var jobIdsUniqueSet = input.TausBackgroundJobIds.ToHashSet();
 
         if (jobIdsUniqueSet.Count == 0)
             throw new PluginMisconfigurationException("At least one Job ID must be provided.");
