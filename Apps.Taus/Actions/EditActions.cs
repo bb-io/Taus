@@ -430,6 +430,21 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
             segmentsProcessed++;
             billedCharacters += result.BilledCharacters;
+            
+            if (!string.IsNullOrEmpty(result.ApeText))
+            {
+                try
+                {
+                    seg.SetTarget(result.ApeText);
+                }
+                catch
+                {
+                    continue;
+                }
+                
+                unit.Notes.Add(new Note("Edited by TAUS APE") { Reference = seg.Id });
+                billedWords += result.BilledWords;
+            }
 
             if (result.QualityScore.HasValue)
             {
@@ -443,19 +458,12 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                 seg.State = overThresholdState;
                 unit.Quality.Score = result.QualityScore;
                 unit.Provenance.Review.Tool = "TAUS";
-                unit.Notes.Add(new Note($"QE Score: {result.QualityScore:F3}") { Reference = seg.Id });
+                unit.Notes.Add(new Note($"TAUS QE Score: {result.QualityScore:F3} ({unit.Quality.ScoreThreshold:F3})") { Reference = seg.Id });
                 segmentsFinalized++;
             }
             else
             {
                 segmentsUnderThreshold++;
-            }
-            
-            if (!string.IsNullOrEmpty(result.ApeText))
-            {
-                seg.SetTarget(result.ApeText);
-                unit.Notes.Add(new Note("Edited by TAUS APE") { Reference = seg.Id });
-                billedWords += result.BilledWords;
             }
         }
 
