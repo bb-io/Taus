@@ -5,6 +5,7 @@ using Apps.Taus.Models.Estimate;
 using Apps.Taus.Models.Request;
 using Apps.Taus.Models.Response;
 using Apps.Taus.Models.TausApiResponseDtos;
+using Apps.Taus.Services.Mxliff;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
@@ -19,6 +20,7 @@ using Blackbird.Filters.Extensions;
 using Blackbird.Filters.Transformations;
 using Blackbird.Filters.Xliff.Xliff1;
 using Blackbird.Filters.Xliff.Xliff2;
+using Newtonsoft.Json;
 using RestSharp;
 using System.Globalization;
 using System.IO;
@@ -244,75 +246,11 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             ProcessedSegments = processedSegments,
         };
     }
-
-    // TODO Rework to utilize TAUS mxliff support in batches, so we can use segment IDs to link the batch results back to the content, instead of relying on segment order
-    private async Task<(string jobId, FileReference transformationFileRef, int totalSegments, int processedSegments)> CreateEditBackgroundJob(
-        FileReference file, EditContentInBackgroundRequest input)
-    {
-        using var stream = await fileManagementClient.DownloadAsync(file);
-        using var reader = new StreamReader(stream);
-        var contentString = await reader.ReadToEndAsync();
-
-        var content = Transformation.Parse(contentString, file.Name)
-            ?? throw new PluginApplicationException("Something went wrong parsing this bilingual file. Please send a copy of this file to the team for inspection!");
-
-        var sourceLanguage = input.SourceLanguage ?? content.SourceLanguage;
-        var targetLanguage = input.TargetLanguage ?? content.TargetLanguage;
-        var segmentStatesToEstimate = input.EstimateUnitsWhereAllSegmentStates?
-            .Select(s => SegmentStateHelper.ToSegmentState(s) ?? SegmentState.Initial)
-            ?? [SegmentState.Initial, SegmentState.Translated];
-        var segmentStateQualifiersToExclude = input.ExcludeSegmentStateQualifiers ?? [];
-
-        if (sourceLanguage is null)
-            throw new PluginMisconfigurationException("The source language is not defined in the bilingual file. Please assign the source language in this action.");
-
-        if (targetLanguage is null)
-            throw new PluginMisconfigurationException("The target language is not defined in the bilingual file. Please assign the target language in this action.");
-
-        using var tsvStream = new MemoryStream();
-        using var tsvWriter = new StreamWriter(tsvStream, new UTF8Encoding(false), leaveOpen: true);
-
-        var totalSegments = content.GetUnits().Select(u => u.Segments.Count).Sum();
-        var processedSegments = 0;
-
-        foreach (var (unit, segment) in GetSegmentsToProcess(content, segmentStatesToEstimate, segmentStateQualifiersToExclude))
-        {
-            var sourceText = segment.GetSource().Replace("\t", " ").Replace("\n", " ");
-            var targetText = segment.GetTarget().Replace("\t", " ").Replace("\n", " ");
-            tsvWriter.WriteLine($"{sourceText}\t{targetText}");
-
-            unit.Quality.ScoreThreshold = input.Threshold;
-            processedSegments++;
-        }
-
-        await tsvWriter.FlushAsync();
-        tsvStream.Position = 0;
-
-        var batchRequest = new TausRequest(ApiEndpoints.EstimateBatchJob, Method.Post, Creds)
-            .AddParameter("source_language", sourceLanguage)
-            .AddParameter("target_language", targetLanguage)
-            .AddParameter("ape_threshold", input.Threshold)
-            .AddFile("file", () => tsvStream, Path.GetFileNameWithoutExtension(file.Name) + ".tsv", "text/tab-separated-values");
-
-        var batchResponse = await Client.ExecuteWithErrorHandling<EstimateBatchJob>(batchRequest);
-
-        if (!string.IsNullOrWhiteSpace(batchResponse.ErrorMessage))
-            throw new PluginApplicationException(batchResponse.ErrorMessage);
-
-        content.MetaData.Add(new(TransformationTausMetadata.Type, batchResponse.JobId) { Category = [TransformationTausMetadata.Category] });
-
-        var transformationFileRef = await fileManagementClient.UploadAsync(
-            Xliff2Serializer.Serialize(content).ToStream(),
-            "application/xliff+xml",
-            content.XliffFileName);
-
-        return (batchResponse.JobId, transformationFileRef, totalSegments, processedSegments);
-    }
-
-    [Action("Download background file", Description = "Download content that was processed in the background. This action should be called after the background process is completed.")]
+    
+    [Action("Download background files", Description = "Download content that was processed in the background. This action should be called after the background process is completed.")]
     public async Task<BackgroundContentResponse> DownloadContentFromBackground([ActionParameter] BackgroundDownloadRequest request)
     {
-        var processedFilesRefs = new List<FileReference>();
+        var processedFiles = new List<BackgroundFileResult>();
         var totalBilledWords = 0;
         var totalBilledCharacters = 0;
         var errors = new List<string>();
@@ -324,9 +262,10 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             var contentString = await reader.ReadToEndAsync();
             var transformation = Transformation.Parse(contentString, transformationFileRef.Name);
 
+            // Extract Job ID from metadata
             var expectedJobId = transformation.MetaData.Find(m => 
                 m.Category.Contains(TransformationTausMetadata.Category)
-                && m.Type == TransformationTausMetadata.Type);
+                && m.Type == TransformationTausMetadata.JobIdType);
 
             if (string.IsNullOrWhiteSpace(expectedJobId?.Value))
             {
@@ -336,10 +275,10 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
             try
             {
-                var (appliedTransformation, billedWords, billedCharacters) = await ApplyEdits(transformation, expectedJobId.Value, request);
-                processedFilesRefs.Add(appliedTransformation);
-                totalBilledWords += billedWords;
-                totalBilledCharacters += billedCharacters;
+                var fileResult = await ApplyEdits(transformation, expectedJobId.Value, request);
+                processedFiles.Add(fileResult);
+                totalBilledWords += fileResult.BilledWords;
+                totalBilledCharacters += fileResult.BilledCharacters;
             }
             catch (Exception ex)
             {
@@ -350,28 +289,98 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
         return new()
         {
-            ProcessedFiles = processedFilesRefs,
+            ProcessedFiles = processedFiles,
             TotalBilledWords = totalBilledWords,
             TotalBilledCharacters = totalBilledCharacters,
             Errors = errors,
         };
     }
+    
+     private async Task<(string jobId, FileReference transformationFileRef, int totalSegments, int processedSegments)> CreateEditBackgroundJob(
+        FileReference file, EditContentInBackgroundRequest input)
+    {
+        await using var stream = await fileManagementClient.DownloadAsync(file);
+        using var reader = new StreamReader(stream);
+        var contentString = await reader.ReadToEndAsync();
 
-    private async Task<(FileReference, int billedWords, int billedCharacters)> ApplyEdits(
+        var content = Transformation.Parse(contentString, file.Name)
+            ?? throw new PluginApplicationException("Something went wrong parsing this bilingual file. Please send a copy of this file to the team for inspection!");
+
+        var sourceLanguage = input.SourceLanguage ?? content.SourceLanguage;
+        var targetLanguage = input.TargetLanguage ?? content.TargetLanguage;
+        var segmentStatesToEstimate = input.EstimateUnitsWhereAllSegmentStates?
+            .Select(s => SegmentStateHelper.ToSegmentState(s) ?? SegmentState.Initial)
+            ?? new[] { SegmentState.Initial, SegmentState.Translated };
+        var segmentStateQualifiersToExclude = input.ExcludeSegmentStateQualifiers ?? Array.Empty<string>();
+
+        if (sourceLanguage is null)
+            throw new PluginMisconfigurationException("The source language is not defined in the bilingual file. Please assign the source language in this action.");
+
+        if (targetLanguage is null)
+            throw new PluginMisconfigurationException("The target language is not defined in the bilingual file. Please assign the target language in this action.");
+
+        // Build MXLIFF using the new builder
+        var mxliffBuilder = new MxliffBuilder();
+        var (mxliffContent, idMappings) = mxliffBuilder.Build(content, segmentStatesToEstimate, segmentStateQualifiersToExclude);
+
+        var totalSegments = content.GetUnits().Select(u => u.Segments.Count).Sum();
+        var processedSegments = idMappings.Count;
+
+        // Upload MXLIFF to TAUS Batch API
+        using var mxliffStream = new MemoryStream(Encoding.UTF8.GetBytes(mxliffContent));
+
+        var batchRequest = new TausRequest(ApiEndpoints.EstimateBatchJob, Method.Post, Creds)
+            .AddParameter("source_language", sourceLanguage)
+            .AddParameter("target_language", targetLanguage)
+            .AddParameter("ape_threshold", input.Threshold.ToString(CultureInfo.InvariantCulture))
+            .AddFile("file", () => mxliffStream, Path.GetFileNameWithoutExtension(file.Name) + ".mxliff", "application/x-mxliff+xml");
+
+        var batchResponse = await Client.ExecuteWithErrorHandling<EstimateBatchJob>(batchRequest);
+
+        if (!string.IsNullOrWhiteSpace(batchResponse.ErrorMessage))
+            throw new PluginApplicationException(batchResponse.ErrorMessage);
+
+        // Store metadata in transformation for later retrieval
+        content.MetaData.Add(new(TransformationTausMetadata.JobIdType, batchResponse.JobId) 
+            { Category = [TransformationTausMetadata.Category] });
+
+        // Store segment ID mappings as JSON metadata
+        var idMappingsJson = JsonConvert.SerializeObject(idMappings);
+        content.MetaData.Add(new(TransformationTausMetadata.SegmentIdMappingsType, idMappingsJson) 
+            { Category = [TransformationTausMetadata.Category] });
+
+        // Set quality threshold on units that were processed
+        foreach (var unit in content.GetUnits())
+        {
+            unit.Quality.ScoreThreshold = input.Threshold;
+        }
+
+        var transformationFileRef = await fileManagementClient.UploadAsync(
+            Xliff2Serializer.Serialize(content).ToStream(),
+            "application/xliff+xml",
+            content.XliffFileName);
+
+        return (batchResponse.JobId, transformationFileRef, totalSegments, processedSegments);
+    }
+
+    private async Task<BackgroundFileResult> ApplyEdits(
         Transformation transformation, string completedJobId, BackgroundDownloadRequest request)
     {
-        var segmentStatesToEstimate = request.EstimateUnitsWhereAllSegmentStates?
-            .Select(s => SegmentStateHelper.ToSegmentState(s) ?? SegmentState.Initial)
-            ?? [SegmentState.Initial, SegmentState.Translated];
-        var segmentStateQualifiersToExclude = request.ExcludeSegmentStateQualifiers ?? [];
         var overThresholdState = SegmentStateHelper.ToSegmentState(request.OverThresholdState ?? string.Empty) ?? SegmentState.Reviewed;
 
         var billedWords = 0;
         var billedCharacters = 0;
+        var totalSegments = transformation.GetUnits().Select(u => u.Segments.Count).Sum();
+        var segmentsProcessed = 0;
+        var segmentsFinalized = 0;
+        var segmentsUnderThreshold = 0;
+        var scoreSum = 0f;
+        var scoresCount = 0;
 
+        // Download MXLIFF results from TAUS
         var fileDownloadRequest = new TausRequest(ApiEndpoints.BatchJobDownload, Method.Get, Creds)
             .AddUrlSegment("job_id", completedJobId)
-            .AddOrUpdateHeader("Accept", "text/tab-separated-values");
+            .AddOrUpdateHeader("Accept", "application/x-mxliff+xml");
 
         var batchResponse = await Client.ExecuteAsync(fileDownloadRequest);
             
@@ -380,46 +389,85 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                 ? $"{batchResponse.ErrorMessage} ({batchResponse.StatusCode})."
                 : $"Batch job results download failed ({batchResponse.StatusCode}).");
 
-        var segments = batchResponse.Content
-            .Split("\n", StringSplitOptions.RemoveEmptyEntries)
-            .Skip(1) // Skip Header
-            .Select(line => line.Split('\t'))
-            .Select(SegmentsFromBatchApe.FromArray)
-            .ToList() ?? [];
+        // Load segment ID mappings from metadata
+        var idMappingsMetadata = transformation.MetaData.Find(m => 
+            m.Category.Contains(TransformationTausMetadata.Category)
+            && m.Type == TransformationTausMetadata.SegmentIdMappingsType);
 
-        if (segments.Count == 0)
-            throw new PluginApplicationException("The batch result file did not contain any segments.");
+        var idMappings = idMappingsMetadata != null
+            ? JsonConvert.DeserializeObject<List<Models.Mxliff.SegmentIdMapping>>(idMappingsMetadata.Value) ?? []
+            : [];
 
-        foreach (var ((originalUnit, originalSegment), processedSegment) in GetSegmentsToProcess(transformation, segmentStatesToEstimate, segmentStateQualifiersToExclude).Zip(segments))
+        // Build original targets dictionary for parser
+        var originalTargets = new Dictionary<string, string>();
+        foreach (var mapping in idMappings)
         {
-            originalUnit.Quality.Score = processedSegment.ApeScore ?? processedSegment.Score;
-            originalUnit.Provenance.Review.Tool = "TAUS";
+            var segment = FindSegmentByMapping(transformation, mapping);
+            if (segment.HasValue)
+            {
+                originalTargets[mapping.MxliffId] = segment.Value.segment.GetTarget();
+            }
+        }
 
-            if (originalUnit.Quality.Score < originalUnit.Quality.ScoreThreshold)
+        // Parse MXLIFF response
+        var mxliffParser = new MxliffParser();
+        var results = mxliffParser.Parse(batchResponse.Content, originalTargets);
+
+        if (results.Count == 0)
+            throw new PluginApplicationException("The batch result file did not contain any processed segments.");
+
+        // Apply results to transformation
+        foreach (var mapping in idMappings)
+        {
+            if (!results.TryGetValue(mapping.MxliffId, out var result))
                 continue;
 
-            originalSegment.State = overThresholdState;
-            originalUnit.Notes.Add(new Note("Scored above threshold by TAUS") { Reference = originalSegment.Id });
+            var segment = FindSegmentByMapping(transformation, mapping);
+            if (segment?.unit == null || segment.Value.segment == null)
+                continue;
 
-            billedCharacters += processedSegment.BilledCharacters ?? 0;
+            var (unit, seg) = segment.Value;
 
-            // The APE result is returned only if the post-edited translation improves the QE score
-            if (!string.IsNullOrEmpty(processedSegment.ApeResult))
+            segmentsProcessed++;
+            billedCharacters += result.BilledCharacters;
+            
+            if (!string.IsNullOrEmpty(result.ApeText))
             {
                 try
                 {
-                    originalSegment.SetTarget(processedSegment.ApeResult);
+                    seg.SetTarget(result.ApeText);
                 }
                 catch
                 {
                     continue;
                 }
                 
-                originalUnit.Notes.Add(new Note(processedSegment.Remarks ?? "Edited by APE") { Reference = originalSegment.Id });
-                billedWords += processedSegment.BilledWords ?? 0;
-            }    
+                unit.Notes.Add(new Note("Edited by TAUS APE") { Reference = seg.Id });
+                billedWords += result.BilledWords;
+            }
+
+            if (result.QualityScore.HasValue)
+            {
+                unit.Quality.Score = result.QualityScore.Value;
+                scoreSum += result.QualityScore.Value;
+                scoresCount++;
+            }
+
+            if (result.QualityScore >= unit.Quality.ScoreThreshold)
+            {
+                seg.State = overThresholdState;
+                unit.Quality.Score = result.QualityScore;
+                unit.Provenance.Review.Tool = "TAUS";
+                unit.Notes.Add(new Note($"TAUS QE Score: {result.QualityScore:F3} ({unit.Quality.ScoreThreshold:F3})") { Reference = seg.Id });
+                segmentsFinalized++;
+            }
+            else
+            {
+                segmentsUnderThreshold++;
+            }
         }
 
+        // Build result file
         FileReference resultFile;
         if (request.OutputFileHandling == "original")
         {
@@ -444,36 +492,50 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                 transformation.XliffFileName);
         }
 
-        return (resultFile, billedWords, billedCharacters);
+        var averageScore = scoresCount > 0 ? scoreSum / scoresCount : 0f;
+        var percentageUnderThreshold = segmentsProcessed > 0 
+            ? (float)segmentsUnderThreshold / segmentsProcessed * 100f 
+            : 0f;
+
+        return new BackgroundFileResult
+        {
+            File = resultFile,
+            TotalSegments = totalSegments,
+            TotalSegmentsProcessed = segmentsProcessed,
+            TotalSegmentsFinalized = segmentsFinalized,
+            TotalSegmentsUnderThreshhold = segmentsUnderThreshold,
+            AverageMetric = averageScore,
+            PercentageSegmentsUnderThreshhold = percentageUnderThreshold,
+            BilledWords = billedWords,
+            BilledCharacters = billedCharacters
+        };
     }
 
-    private static IEnumerable<(Unit, Segment)> GetSegmentsToProcess(Transformation transformation, IEnumerable<SegmentState> segmentStatesToEstimate, IEnumerable<string> segmentStateQualifiersToExclude)
+    private static (Unit unit, Segment segment)? FindSegmentByMapping(Transformation transformation, Models.Mxliff.SegmentIdMapping mapping)
     {
-        foreach (var unit in transformation.GetUnits())
+        // If original ID exists, search by ID
+        if (!mapping.IsGenerated && !string.IsNullOrWhiteSpace(mapping.OriginalId))
         {
-            if (unit.State == SegmentState.Reviewed || unit.State == SegmentState.Final)
-                continue;
-
-            foreach (var segment in unit.Segments)
+            foreach (var unit in transformation.GetUnits())
             {
-                if (segment.IsIgnorbale)
-                    continue;
-
-                if (segmentStatesToEstimate.Contains(segment.State ?? SegmentState.Initial) == false)
-                    continue;
-
-                if (segmentStateQualifiersToExclude.Any())
-                {
-                    var stateQualifier = segment.TargetAttributes.FirstOrDefault(a => a.Name == "state-qualifier");
-                    if (stateQualifier is not null && segmentStateQualifiersToExclude.Contains(stateQualifier.Value))
-                        continue;
-                }
-
-                if (string.IsNullOrWhiteSpace(segment.GetTarget()))
-                    continue;
-
-                yield return (unit, segment);
+                var segment = unit.Segments.FirstOrDefault(s => s.Id == mapping.OriginalId);
+                if (segment != null)
+                    return (unit, segment);
             }
         }
+
+        // Fallback: use sequence index
+        var currentIndex = 0;
+        foreach (var unit in transformation.GetUnits())
+        {
+            foreach (var segment in unit.Segments)
+            {
+                if (currentIndex == mapping.SequenceIndex)
+                    return (unit, segment);
+                currentIndex++;
+            }
+        }
+
+        return null;
     }
 }
