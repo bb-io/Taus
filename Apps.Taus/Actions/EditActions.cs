@@ -406,7 +406,15 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             // The APE result is returned only if the post-edited translation improves the QE score
             if (!string.IsNullOrEmpty(processedSegment.ApeResult))
             {
-                originalSegment.SetTarget(processedSegment.ApeResult);
+                try
+                {
+                    originalSegment.SetTarget(processedSegment.ApeResult);
+                }
+                catch
+                {
+                    continue;
+                }
+                
                 originalUnit.Notes.Add(new Note(processedSegment.Remarks ?? "Edited by APE") { Reference = originalSegment.Id });
                 billedWords += processedSegment.BilledWords ?? 0;
             }    
