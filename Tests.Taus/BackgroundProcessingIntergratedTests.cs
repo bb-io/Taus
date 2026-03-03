@@ -70,7 +70,7 @@ public class BackgroundProcessingIntergratedTests : TestBase
         //
         var request = new BackgroundDownloadRequest
         {
-            TausBackgroundJobIds = createBatchJobResponse.TausBackgroundJobIds,
+            //TausBackgroundJobIds = createBatchJobResponse.TausBackgroundJobIds,
             TausTransformationFiles = createBatchJobResponse.TausTransformationFiles.Select(FileManager.ReferOutputAsync),
             OverThresholdState = SegmentStateHelper.Serialize(SegmentState.Final),
             OutputFileHandling = "xliff1",
