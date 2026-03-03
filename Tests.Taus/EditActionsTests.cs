@@ -81,7 +81,7 @@ public class EditActionsTests : TestBase
         var actions = new EditActions(InvocationContext, FileManager);
         var request = new BackgroundDownloadRequest
         {
-            TausBackgroundJobIds = ["d31cd848-5e14-4e7b-9cfb-81dfbfcbcd24"],
+            //TausBackgroundJobIds = ["d31cd848-5e14-4e7b-9cfb-81dfbfcbcd24"],
             TausTransformationFiles = [new FileReference { Name = "background-transformation.xlf" }],
         };
 
@@ -97,7 +97,7 @@ public class EditActionsTests : TestBase
         var actions = new EditActions(InvocationContext, FileManager);
         var request = new BackgroundDownloadRequest
         {
-            TausBackgroundJobIds = ["d31cd848-5e14-4e7b-9cfb-81dfbfcbcd24"],
+            //TausBackgroundJobIds = ["d31cd848-5e14-4e7b-9cfb-81dfbfcbcd24"],
             TausTransformationFiles = [new FileReference { Name = "background-transformation.xlf" }],
             OutputFileHandling = "xliff1",
         };

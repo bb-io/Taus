@@ -1,6 +1,7 @@
 ﻿using Apps.Taus.Constants;
 using Apps.Taus.Models.Response.Error;
 using Apps.Taus.Models.TausApiResponseDtos;
+using Apps.Taus.Services;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
@@ -16,9 +17,8 @@ namespace Apps.Taus.Api;
 
 public class TausClient : BlackBirdRestClient
 {
-
-    private const int RetryCount = 5;
-    private const int WaitBeforeRetrySeconds = 2;
+    private static readonly ResiliencePipeline<RestResponse> TooManyRequestsPipeline =
+       TausPollyPolicies.GetTooManyRequestsRetryPolicy(retryCount: 6);
 
     public TausClient(IEnumerable<AuthenticationCredentialsProvider> creds) : base(new RestClientOptions()
     {
@@ -57,13 +57,11 @@ public class TausClient : BlackBirdRestClient
         return new PluginApplicationException(errorMessage);
     }
 
-    private readonly AsyncRetryPolicy<RestResponse> _retryPolicy = Policy
-        .HandleResult<RestResponse>(response => response.StatusCode == HttpStatusCode.TooManyRequests)
-        .WaitAndRetryAsync(RetryCount, _ => TimeSpan.FromSeconds(WaitBeforeRetrySeconds));
-
     public override async Task<T> ExecuteWithErrorHandling<T>(RestRequest request)
     {
-        var response = await _retryPolicy.ExecuteAsync(() => ExecuteAsync(request));
+        var response = await TooManyRequestsPipeline.ExecuteAsync(
+            ct => new ValueTask<RestResponse>(base.ExecuteAsync(request, ct)),
+            CancellationToken.None);
 
         if (!response.IsSuccessStatusCode)
         {
