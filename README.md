@@ -30,13 +30,30 @@ Before you can connect you need to make sure that:
 
 ### Review
 
-- **Review** review a translated content file returned from other content processing actions. Adds quality scores to each segment.
-- **Review text** reviews translated text and returns a quality score
+- **Review** Review translated content and output quality scores for each segment. Advanced settings:
+  - **Target language**: Override the target language used for quality estimation.
+  - **Output file handling**: Choose the output file format for downstream steps.
+- **Review text** Review translated text and output a quality score.
 
 ### Editing
 
-- **Edit** a translated file. This action assumes you have previously translated content in Blackbird through any translation action. Only looks at translated segments, first applies an MTQE pass and when the score is below the threshold will do an edit. Remarks about edits are added to segments as notes.
-- **Edit text** given a source segment and translated target segment, responds with an edited version of the target segment taking into account typical mistakes.
+- **Edit** Edit translated content and output updated segments with quality metadata. Advanced settings:
+  - **APE threshold**: Set the upper threshold used for APE processing.
+  - **APE low threshold**: Set the lower threshold used for APE processing.
+  - **Use RAG**: Enable retrieval-augmented generation during editing.
+- **Edit text** Edit translated text and output an improved target text.
+- **Edit in background** Edit translated content in background jobs and output job IDs for later retrieval. Advanced settings:
+  - **Source language**: Override the source language used for job processing.
+  - **Segment states to estimate**: Include only units that have segments in the selected states.
+  - **Exclude segment state qualifiers**: Exclude segments that contain the specified state qualifiers.
+- **Download background files** Download files processed in background jobs and output updated files with usage details. Advanced settings:
+  - **State to set above threshold**: Set the segment state applied when the score is above the threshold.
+
+## Events
+
+### Batch polling
+
+- **On background job finished** Triggered when all provided jobs reach a terminal status (completed, failed, or expired).
 
 > Supported languages can be found [here](https://developer.taus.net/). TAUS' sandbox environment only supports :
 > - English (en)
