@@ -35,7 +35,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     : TausInvocable(invocationContext)
 {
     [BlueprintActionDefinition(BlueprintAction.EditFile)]
-    [Action("Edit", Description = "Edit a translation. This action assumes you have previously translated content in Blackbird through any translation action.")]
+    [Action("Edit", Description = "Edit translated content and output updated segments with quality metadata.")]
     public async Task<ContentEditResponse> EditContent([ActionParameter] EditContentRequest input)
     {
         var stream = await fileManagementClient.DownloadAsync(input.File);
@@ -194,7 +194,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     }
 
     [BlueprintActionDefinition(BlueprintAction.EditText)]
-    [Action("Edit text", Description = "Estimates translated text")]
+    [Action("Edit text", Description = "Edit translated text and output an improved target text.")]
     public async Task<EditTextOutput> EditText([ActionParameter] EditTextRequest input)
     {
         var response = await Estimate(new EstimateInput
@@ -212,7 +212,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         return new EditTextOutput(response, input.TargetText);
     }
 
-    [Action("Edit in background", Description = "Edits translated text in the background. Use a checkpoint to recover results when they are ready. APE runs asynchronously via OpenAI’s Batch API and may take up to 24 hours, although results are often available significantly earlier.")]
+    [Action("Edit in background", Description = "Edit translated content in background jobs and output job IDs for later retrieval.")]
     public async Task<ContentEditInBackgroundResponse> EditContentInBackground([ActionParameter] EditContentInBackgroundRequest input)
     {
         var jobIds = new List<string>();
@@ -247,7 +247,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         };
     }
     
-    [Action("Download background files", Description = "Download content that was processed in the background. This action should be called after the background process is completed.")]
+    [Action("Download background files", Description = "Download files processed in background jobs and output updated files with usage details.")]
     public async Task<BackgroundContentResponse> DownloadContentFromBackground([ActionParameter] BackgroundDownloadRequest request)
     {
         var processedFiles = new List<BackgroundFileResult>();

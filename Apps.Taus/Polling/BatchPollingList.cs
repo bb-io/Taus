@@ -15,7 +15,7 @@ namespace Apps.Taus.Polling;
 [PollingEventList]
 public class BatchPollingList(InvocationContext invocationContext) : TausInvocable(invocationContext)
 {
-    [PollingEvent("On background job finished", "Triggered when a job reaches a terminal state (completed/failed/cancelled).")]
+    [PollingEvent("On background job finished", "Triggered when all provided jobs reach a terminal status (completed, failed, or expired).")]
     public async Task<PollingEventResponse<BatchMemory, BatchPollingResponse>> OnBatchFinished(
         PollingEventRequest<BatchMemory> request,
         [PollingEventParameter] OnBatchFinishedRequest input)

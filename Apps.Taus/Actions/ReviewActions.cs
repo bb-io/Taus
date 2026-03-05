@@ -20,7 +20,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
     : TausInvocable(invocationContext)
 {
     [BlueprintActionDefinition(BlueprintAction.ReviewFile)]
-    [Action("Review", Description = "Review a translated content file returned from other content processing actions")]
+    [Action("Review", Description = "Review translated content and output quality scores for each segment.")]
     public async Task<ContentReviewResponse> EstimateContent([ActionParameter] ReviewContentRequest input)
     {
         var stream = await fileManagementClient.DownloadAsync(input.File);
@@ -153,7 +153,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
     }
 
     [BlueprintActionDefinition(BlueprintAction.ReviewText)]
-    [Action("Review text", Description = "Reviews translated text and returns a quality score")]
+    [Action("Review text", Description = "Review translated text and output a quality score.")]
     public async Task<ReviewTextOutput> EstimateTextContent([ActionParameter] ReviewTextRequest input)
     {
         var response = await Estimate(new EstimateInput

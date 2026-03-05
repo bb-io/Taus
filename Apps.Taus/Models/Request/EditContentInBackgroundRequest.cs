@@ -24,6 +24,6 @@ public class EditContentInBackgroundRequest
     [StaticDataSource(typeof(XliffStateDataSourceHandler))]
     public IEnumerable<string>? EstimateUnitsWhereAllSegmentStates { get; set; }
 
-    [Display("Exlude segment state qualifiers", Description = "Segments with the specified qualifiers are excluded from editing. If no qualifiers are provided, all segments are included in the APE job. For XTM, it's recommended to use 'leveraged-tm' and 'leveraged-inherited'.")]
+    [Display("Exclude segment state qualifiers", Description = "Segments with the specified qualifiers are excluded from editing. If no qualifiers are provided, all segments are included in the APE job. For XTM, it's recommended to use 'leveraged-tm' and 'leveraged-inherited'.")]
     public IEnumerable<string>? ExcludeSegmentStateQualifiers { get; set; }
 }
