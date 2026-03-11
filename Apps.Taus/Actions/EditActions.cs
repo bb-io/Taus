@@ -382,7 +382,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             .AddUrlSegment("job_id", completedJobId)
             .AddOrUpdateHeader("Accept", "application/x-mxliff+xml");
 
-        var batchResponse = await Client.ExecuteAsync(fileDownloadRequest);
+        var batchResponse = await Client.ExecuteWithRetry(fileDownloadRequest);
             
         if (!batchResponse.IsSuccessful || string.IsNullOrWhiteSpace(batchResponse.Content))
             throw new PluginApplicationException(!string.IsNullOrWhiteSpace(batchResponse.ErrorMessage)

@@ -99,4 +99,13 @@ public class TausClient : BlackBirdRestClient
 
         return allItems;
     }
+
+    public async Task<RestResponse> ExecuteWithRetry(RestRequest request)
+    {
+        var response = await TooManyRequestsPipeline.ExecuteAsync(
+            ct => new ValueTask<RestResponse>(base.ExecuteAsync(request, ct)),
+            CancellationToken.None);
+
+        return response;
+    }
 }
