@@ -18,6 +18,6 @@ public class BackgroundDownloadRequest
     [StaticDataSource(typeof(TausOutputFileFormatDataHandler))]
     public string? OutputFileHandling { get; set; }
 
-    [Display("Add low-score Edited by TAUS comment", Description = "When enabled, adds the comment 'Edited by TAUS' for edited segments whose ape-score is below the stored threshold.")]
-    public bool AddLowScoreEditedByTausComment { get; set; } = true;
+    [Display("Add low-score edited by TAUS comment", Description = "When enabled, adds the comment 'Edited by TAUS' for edited segments whose ape-score is below the stored threshold.")]
+    public bool? AddLowScoreEditedByTausComment { get; set; } = true;
 }
