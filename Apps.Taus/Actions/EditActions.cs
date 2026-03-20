@@ -321,7 +321,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             throw new PluginMisconfigurationException("The target language is not defined in the bilingual file. Please assign the target language in this action.");
 
         var xliffBatchBuilder = new XliffBatchBuilder();
-        var (xliffContent, idMappings) = xliffBatchBuilder.Build(content, segmentStatesToEstimate, segmentStateQualifiersToExclude);
+        var (xliffContent, idMappings) = xliffBatchBuilder.Build(content, segmentStatesToEstimate, segmentStateQualifiersToExclude, sourceLanguage, targetLanguage);
 
         var totalSegments = content.GetUnits().Select(u => u.Segments.Count).Sum();
         var processedSegments = idMappings.Count;
@@ -427,7 +427,8 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
                 billedWords += result.BilledWords;
 
-                if (request.AddLowScoreEditedByTausComment
+                var addLowScoreComment = request.AddLowScoreEditedByTausComment ?? true;
+                if (addLowScoreComment
                     && result.ApeScore.HasValue
                     && result.ApeScore.Value < unit.Quality.ScoreThreshold)
                 {

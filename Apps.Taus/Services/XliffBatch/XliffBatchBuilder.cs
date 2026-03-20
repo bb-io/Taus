@@ -13,7 +13,9 @@ public sealed class XliffBatchBuilder
     public (string XliffContent, IReadOnlyList<SegmentIdMapping> IdMappings) Build(
         Transformation transformation,
         IEnumerable<SegmentState>? segmentStatesToInclude = null,
-        IEnumerable<string>? segmentStateQualifiersToExclude = null)
+        IEnumerable<string>? segmentStateQualifiersToExclude = null,
+        string? sourceLanguageOverride = null,
+        string? targetLanguageOverride = null)
     {
         ArgumentNullException.ThrowIfNull(transformation);
 
@@ -38,8 +40,8 @@ public sealed class XliffBatchBuilder
 
         writer.WriteStartElement("file");
         writer.WriteAttributeString("original", transformation.OriginalName);
-        writer.WriteAttributeString("source-language", transformation.SourceLanguage ?? "en");
-        writer.WriteAttributeString("target-language", transformation.TargetLanguage ?? "en");
+        writer.WriteAttributeString("source-language", sourceLanguageOverride ?? transformation.SourceLanguage ?? "en");
+        writer.WriteAttributeString("target-language", targetLanguageOverride ?? transformation.TargetLanguage ?? "en");
         writer.WriteAttributeString("datatype", "plaintext");
 
         writer.WriteStartElement("body");
