@@ -1,45 +1,24 @@
 using System.Text;
 using System.Xml;
-using Apps.Taus.Models.Mxliff;
+using Apps.Taus.Models.XliffBatch;
 using Blackbird.Filters.Enums;
 using Blackbird.Filters.Transformations;
 
-namespace Apps.Taus.Services.Mxliff;
+namespace Apps.Taus.Services.XliffBatch;
 
-/// <summary>
-/// Custom StringWriter that uses UTF-8 encoding instead of UTF-16
-/// </summary>
-internal sealed class Utf8StringWriter : StringWriter
-{
-    public override Encoding Encoding => Encoding.UTF8;
-}
-
-/// <summary>
-/// Builds MXLIFF (Memsource XLIFF) documents from Transformation objects.
-/// Follows MXLIFF 2.0 specification with support for segment filtering and ID generation.
-/// </summary>
-public sealed class MxliffBuilder
+public sealed class XliffBatchBuilder
 {
     private const string XliffNamespace = "urn:oasis:names:tc:xliff:document:1.2";
-    private const string MemsourceNamespace = "http://www.memsource.com/mxlf/2.0";
 
-    /// <summary>
-    /// Builds an MXLIFF document from a Transformation object.
-    /// </summary>
-    /// <param name="transformation">The transformation containing segments to process</param>
-    /// <param name="segmentStatesToInclude">States of segments to include (default: Initial, Translated)</param>
-    /// <param name="segmentStateQualifiersToExclude">State qualifiers to exclude segments</param>
-    /// <returns>MXLIFF XML string and segment ID mappings</returns>
-    public (string MxliffContent, IReadOnlyList<SegmentIdMapping> IdMappings) Build(
+    public (string XliffContent, IReadOnlyList<SegmentIdMapping> IdMappings) Build(
         Transformation transformation,
         IEnumerable<SegmentState>? segmentStatesToInclude = null,
         IEnumerable<string>? segmentStateQualifiersToExclude = null)
     {
         ArgumentNullException.ThrowIfNull(transformation);
 
-        var statesToInclude = segmentStatesToInclude?.ToList() ?? new List<SegmentState> { SegmentState.Initial, SegmentState.Translated };
-        var qualifiersToExclude = segmentStateQualifiersToExclude?.ToList() ?? new List<string>();
-
+        var statesToInclude = segmentStatesToInclude?.ToList() ?? [SegmentState.Initial, SegmentState.Translated];
+        var qualifiersToExclude = segmentStateQualifiersToExclude?.ToList() ?? [];
         var idGenerator = new SegmentIdGenerator(transformation.OriginalName ?? "file");
         var idMappings = new List<SegmentIdMapping>();
 
@@ -55,13 +34,13 @@ public sealed class MxliffBuilder
 
         writer.WriteStartDocument();
         writer.WriteStartElement("xliff", XliffNamespace);
-        writer.WriteAttributeString("xmlns", "m", null, MemsourceNamespace);
         writer.WriteAttributeString("version", "1.2");
 
         writer.WriteStartElement("file");
         writer.WriteAttributeString("original", transformation.OriginalName);
         writer.WriteAttributeString("source-language", transformation.SourceLanguage ?? "en");
         writer.WriteAttributeString("target-language", transformation.TargetLanguage ?? "en");
+        writer.WriteAttributeString("datatype", "plaintext");
 
         writer.WriteStartElement("body");
 
@@ -70,7 +49,6 @@ public sealed class MxliffBuilder
 
         foreach (var unit in transformation.GetUnits())
         {
-            // Skip units that are already reviewed or finalized
             if (unit.State == SegmentState.Reviewed || unit.State == SegmentState.Final)
                 continue;
 
@@ -81,7 +59,6 @@ public sealed class MxliffBuilder
 
                 var segmentId = GetOrGenerateSegmentId(segment, idGenerator, sequenceIndex, out var mapping);
                 idMappings.Add(mapping);
-
                 WriteTransUnit(writer, segmentId, segment, groupId);
 
                 groupId++;
@@ -89,9 +66,9 @@ public sealed class MxliffBuilder
             }
         }
 
-        writer.WriteEndElement(); // body
-        writer.WriteEndElement(); // file
-        writer.WriteEndElement(); // xliff
+        writer.WriteEndElement();
+        writer.WriteEndElement();
+        writer.WriteEndElement();
         writer.WriteEndDocument();
         writer.Flush();
 
@@ -103,16 +80,13 @@ public sealed class MxliffBuilder
         IReadOnlyList<SegmentState> statesToInclude,
         IReadOnlyList<string> qualifiersToExclude)
     {
-        // Skip ignorable segments
         if (segment.IsIgnorbale)
             return false;
 
-        // Check if segment state is in the list of states to estimate
         var segmentState = segment.State ?? SegmentState.Initial;
         if (!statesToInclude.Contains(segmentState))
             return false;
 
-        // Check state qualifiers exclusion
         if (qualifiersToExclude.Any())
         {
             var stateQualifier = segment.TargetAttributes.FirstOrDefault(a => a.Name == "state-qualifier");
@@ -120,11 +94,7 @@ public sealed class MxliffBuilder
                 return false;
         }
 
-        // Skip segments without target text
-        if (string.IsNullOrWhiteSpace(segment.GetTarget()))
-            return false;
-
-        return true;
+        return !string.IsNullOrWhiteSpace(segment.GetTarget());
     }
 
     private static string GetOrGenerateSegmentId(
@@ -135,18 +105,17 @@ public sealed class MxliffBuilder
     {
         var originalId = segment.Id ?? string.Empty;
         var hasId = !string.IsNullOrWhiteSpace(originalId);
-
-        var mxliffId = hasId ? originalId : idGenerator.GetNextId();
+        var batchSegmentId = hasId ? originalId : idGenerator.GetNextId();
 
         mapping = new SegmentIdMapping
         {
             OriginalId = originalId,
-            MxliffId = mxliffId,
+            BatchSegmentId = batchSegmentId,
             IsGenerated = !hasId,
             SequenceIndex = sequenceIndex
         };
 
-        return mxliffId;
+        return batchSegmentId;
     }
 
     private static void WriteTransUnit(XmlWriter writer, string id, Segment segment, int groupId)
@@ -156,17 +125,16 @@ public sealed class MxliffBuilder
 
         writer.WriteStartElement("trans-unit");
         writer.WriteAttributeString("id", id);
-        writer.WriteAttributeString("xml", "space", "http://www.w3.org/XML/1998/namespace", "preserve");
 
         writer.WriteStartElement("source");
         writer.WriteString(segment.GetSource());
-        writer.WriteEndElement(); // source
+        writer.WriteEndElement();
 
         writer.WriteStartElement("target");
         writer.WriteString(segment.GetTarget());
-        writer.WriteEndElement(); // target
+        writer.WriteEndElement();
 
-        writer.WriteEndElement(); // trans-unit
-        writer.WriteEndElement(); // group
+        writer.WriteEndElement();
+        writer.WriteEndElement();
     }
 }
