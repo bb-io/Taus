@@ -5,7 +5,8 @@ using Apps.Taus.Models.Estimate;
 using Apps.Taus.Models.Request;
 using Apps.Taus.Models.Response;
 using Apps.Taus.Models.TausApiResponseDtos;
-using Apps.Taus.Services.Mxliff;
+using Apps.Taus.Models.XliffBatch;
+using Apps.Taus.Services.XliffBatch;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
@@ -319,21 +320,19 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         if (targetLanguage is null)
             throw new PluginMisconfigurationException("The target language is not defined in the bilingual file. Please assign the target language in this action.");
 
-        // Build MXLIFF using the new builder
-        var mxliffBuilder = new MxliffBuilder();
-        var (mxliffContent, idMappings) = mxliffBuilder.Build(content, segmentStatesToEstimate, segmentStateQualifiersToExclude);
+        var xliffBatchBuilder = new XliffBatchBuilder();
+        var (xliffContent, idMappings) = xliffBatchBuilder.Build(content, segmentStatesToEstimate, segmentStateQualifiersToExclude);
 
         var totalSegments = content.GetUnits().Select(u => u.Segments.Count).Sum();
         var processedSegments = idMappings.Count;
 
-        // Upload MXLIFF to TAUS Batch API
-        using var mxliffStream = new MemoryStream(Encoding.UTF8.GetBytes(mxliffContent));
+        using var xliffStream = new MemoryStream(Encoding.UTF8.GetBytes(xliffContent));
 
         var batchRequest = new TausRequest(ApiEndpoints.EstimateBatchJob, Method.Post, Creds)
             .AddParameter("source_language", sourceLanguage)
             .AddParameter("target_language", targetLanguage)
             .AddParameter("ape_threshold", input.Threshold.ToString(CultureInfo.InvariantCulture))
-            .AddFile("file", () => mxliffStream, Path.GetFileNameWithoutExtension(file.Name) + ".mxliff", "application/x-mxliff+xml");
+            .AddFile("file", () => xliffStream, Path.GetFileNameWithoutExtension(file.Name) + ".xliff", MediaTypes.Xliff);
 
         var batchResponse = await Client.ExecuteWithErrorHandling<EstimateBatchJob>(batchRequest);
 
@@ -344,7 +343,6 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         content.MetaData.Add(new(TransformationTausMetadata.JobIdType, batchResponse.JobId) 
             { Category = [TransformationTausMetadata.Category] });
 
-        // Store segment ID mappings as JSON metadata
         var idMappingsJson = JsonConvert.SerializeObject(idMappings);
         content.MetaData.Add(new(TransformationTausMetadata.SegmentIdMappingsType, idMappingsJson) 
             { Category = [TransformationTausMetadata.Category] });
@@ -377,10 +375,9 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         var scoreSum = 0f;
         var scoresCount = 0;
 
-        // Download MXLIFF results from TAUS
         var fileDownloadRequest = new TausRequest(ApiEndpoints.BatchJobDownload, Method.Get, Creds)
             .AddUrlSegment("job_id", completedJobId)
-            .AddOrUpdateHeader("Accept", "application/x-mxliff+xml");
+            .AddOrUpdateHeader("Accept", MediaTypes.Xliff);
 
         var batchResponse = await Client.ExecuteWithRetry(fileDownloadRequest);
             
@@ -389,37 +386,23 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                 ? $"{batchResponse.ErrorMessage} ({batchResponse.StatusCode})."
                 : $"Batch job results download failed ({batchResponse.StatusCode}).");
 
-        // Load segment ID mappings from metadata
         var idMappingsMetadata = transformation.MetaData.Find(m => 
             m.Category.Contains(TransformationTausMetadata.Category)
             && m.Type == TransformationTausMetadata.SegmentIdMappingsType);
 
         var idMappings = idMappingsMetadata != null
-            ? JsonConvert.DeserializeObject<List<Models.Mxliff.SegmentIdMapping>>(idMappingsMetadata.Value) ?? []
+            ? JsonConvert.DeserializeObject<List<SegmentIdMapping>>(idMappingsMetadata.Value) ?? []
             : [];
 
-        // Build original targets dictionary for parser
-        var originalTargets = new Dictionary<string, string>();
-        foreach (var mapping in idMappings)
-        {
-            var segment = FindSegmentByMapping(transformation, mapping);
-            if (segment.HasValue)
-            {
-                originalTargets[mapping.MxliffId] = segment.Value.segment.GetTarget();
-            }
-        }
-
-        // Parse MXLIFF response
-        var mxliffParser = new MxliffParser();
-        var results = mxliffParser.Parse(batchResponse.Content, originalTargets);
+        var xliffBatchParser = new XliffBatchParser();
+        var results = xliffBatchParser.Parse(batchResponse.Content);
 
         if (results.Count == 0)
             throw new PluginApplicationException("The batch result file did not contain any processed segments.");
 
-        // Apply results to transformation
         foreach (var mapping in idMappings)
         {
-            if (!results.TryGetValue(mapping.MxliffId, out var result))
+            if (!results.TryGetValue(mapping.BatchSegmentId, out var result))
                 continue;
 
             var segment = FindSegmentByMapping(transformation, mapping);
@@ -431,34 +414,46 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             segmentsProcessed++;
             billedCharacters += result.BilledCharacters;
             
-            if (!string.IsNullOrEmpty(result.ApeText))
+            if (!string.IsNullOrEmpty(result.ApeResult))
             {
                 try
                 {
-                    seg.SetTarget(result.ApeText);
+                    seg.SetTarget(result.ApeResult);
                 }
                 catch
                 {
                     continue;
                 }
-                
-                unit.Notes.Add(new Note("Edited by TAUS APE") { Reference = seg.Id });
+
                 billedWords += result.BilledWords;
+
+                if (request.AddLowScoreEditedByTausComment
+                    && result.ApeScore.HasValue
+                    && result.ApeScore.Value < unit.Quality.ScoreThreshold)
+                {
+                    unit.Notes.Add(new Note("Edited by TAUS") { Reference = seg.Id });
+                }
             }
 
-            if (result.QualityScore.HasValue)
+            if (!string.IsNullOrWhiteSpace(result.Remarks))
             {
-                unit.Quality.Score = result.QualityScore.Value;
-                scoreSum += result.QualityScore.Value;
+                unit.Notes.Add(new Note($"Edited by TAUS. {result.Remarks}") { Reference = seg.Id });
+            }
+
+            var effectiveScore = result.EffectiveScore;
+            if (effectiveScore.HasValue)
+            {
+                unit.Quality.Score = effectiveScore.Value;
+                scoreSum += effectiveScore.Value;
                 scoresCount++;
             }
 
-            if (result.QualityScore >= unit.Quality.ScoreThreshold)
+            if (effectiveScore >= unit.Quality.ScoreThreshold)
             {
                 seg.State = overThresholdState;
-                unit.Quality.Score = result.QualityScore;
+                unit.Quality.Score = effectiveScore;
                 unit.Provenance.Review.Tool = "TAUS";
-                unit.Notes.Add(new Note($"TAUS QE Score: {result.QualityScore:F3} ({unit.Quality.ScoreThreshold:F3})") { Reference = seg.Id });
+                unit.Notes.Add(new Note($"TAUS QE Score: {effectiveScore:F3} ({unit.Quality.ScoreThreshold:F3})") { Reference = seg.Id });
                 segmentsFinalized++;
             }
             else
@@ -511,7 +506,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         };
     }
 
-    private static (Unit unit, Segment segment)? FindSegmentByMapping(Transformation transformation, Models.Mxliff.SegmentIdMapping mapping)
+    private static (Unit unit, Segment segment)? FindSegmentByMapping(Transformation transformation, SegmentIdMapping mapping)
     {
         // If original ID exists, search by ID
         if (!mapping.IsGenerated && !string.IsNullOrWhiteSpace(mapping.OriginalId))
