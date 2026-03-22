@@ -20,4 +20,7 @@ public class BackgroundDownloadRequest
 
     [Display("Add low-score edited by TAUS comment", Description = "When enabled, adds the comment 'Edited by TAUS' for edited segments whose ape-score is below the stored threshold.")]
     public bool? AddLowScoreEditedByTausComment { get; set; } = true;
+
+    [Display("Add quality score as note", Description = "When enabled, adds the comment 'TAUS QE Score: 0.923 (0.900)' where first number is segment's score and second number is threshold.")]
+    public bool? AddScoreToSegmentComment { get; set; } = true;
 }
