@@ -13,7 +13,6 @@ using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Blueprints;
-using Blackbird.Applications.SDK.Extensions.FileManagement;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Filters.Constants;
 using Blackbird.Filters.Enums;
@@ -24,8 +23,6 @@ using Blackbird.Filters.Xliff.Xliff2;
 using Newtonsoft.Json;
 using RestSharp;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Text;
 using Segment = Blackbird.Filters.Transformations.Segment;
 
@@ -331,8 +328,10 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         var batchRequest = new TausRequest(ApiEndpoints.EstimateBatchJob, Method.Post, Creds)
             .AddParameter("source_language", sourceLanguage)
             .AddParameter("target_language", targetLanguage)
-            .AddParameter("ape_threshold", input.Threshold.ToString(CultureInfo.InvariantCulture))
             .AddFile("file", () => xliffStream, Path.GetFileNameWithoutExtension(file.Name) + ".xliff", MediaTypes.Xliff);
+
+        if (input.DisableApe != true)
+            batchRequest.AddParameter("threshold", input.Threshold.ToString(CultureInfo.InvariantCulture));
 
         var batchResponse = await Client.ExecuteWithErrorHandling<EstimateBatchJob>(batchRequest);
 

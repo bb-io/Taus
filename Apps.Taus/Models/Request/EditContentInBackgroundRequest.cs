@@ -10,7 +10,7 @@ public class EditContentInBackgroundRequest
 {
     public IEnumerable<FileReference> Files { get; set; } = [];
 
-    [Display("Score threshold", Description = "Segments scoring below the threshold are automatically post-edited. A new QE score is computed for the post-edited translation. The edited result is returned only if the post-edited translation improves the QE score. If no threshold is provided, APE is disabled for the job.")]
+    [Display("Score threshold", Description = "Segments scoring below the threshold are automatically post-edited. A new QE score is computed for the post-edited translation. The edited result is returned only if the post-edited translation improves the QE score.")]
     [StaticDataSource(typeof(ThresholdHandler))]
     public float Threshold { get; set; }
 
@@ -26,4 +26,7 @@ public class EditContentInBackgroundRequest
 
     [Display("Exclude segment state qualifiers", Description = "Segments with the specified qualifiers are excluded from editing. If no qualifiers are provided, all segments are included in the APE job. For XTM, it's recommended to use 'leveraged-tm' and 'leveraged-inherited'.")]
     public IEnumerable<string>? ExcludeSegmentStateQualifiers { get; set; }
+
+    [Display("Disable automated post-editing (APE)", Description = "Estimate segments only. APE is enabled by default.")]
+    public bool? DisableApe { get; set; }
 }
