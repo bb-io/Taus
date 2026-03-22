@@ -331,7 +331,13 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             .AddFile("file", () => xliffStream, Path.GetFileNameWithoutExtension(file.Name) + ".xliff", MediaTypes.Xliff);
 
         if (input.DisableApe != true)
-            batchRequest.AddParameter("threshold", input.Threshold.ToString(CultureInfo.InvariantCulture));
+            batchRequest.AddParameter("ape_threshold", input.Threshold.ToString(CultureInfo.InvariantCulture));
+
+        if (input.UseRagWithApe == true)
+            batchRequest.AddParameter("ape_use_rag", "true");
+
+        if (input.ApeResourceGroupId is not null)
+            batchRequest.AddParameter("ape_low_threshold", input.ApeResourceGroupId);
 
         var batchResponse = await Client.ExecuteWithErrorHandling<EstimateBatchJob>(batchRequest);
 
@@ -431,30 +437,30 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                     && result.ApeScore.HasValue
                     && result.ApeScore.Value < unit.Quality.ScoreThreshold)
                 {
-                    unit.Notes.Add(new Note("Edited by TAUS") { Reference = seg.Id });
+                    unit.Notes.Add(new Note($"Edited by TAUS. {result.Remarks ?? ""}") { Reference = seg.Id });
                 }
             }
 
-            if (!string.IsNullOrWhiteSpace(result.Remarks))
-            {
-                unit.Notes.Add(new Note($"Edited by TAUS. {result.Remarks}") { Reference = seg.Id });
-            }
-
             var effectiveScore = result.EffectiveScore;
-            if (effectiveScore.HasValue)
-            {
-                unit.Quality.Score = effectiveScore.Value;
-                scoreSum += effectiveScore.Value;
-                scoresCount++;
-            }
+            if (effectiveScore.HasValue == false)
+                continue;
+
+            unit.Quality.Score = effectiveScore.Value;
+            scoreSum += effectiveScore.Value;
+            scoresCount++;
+
+            var addScoreToSegmentComment = request.AddScoreToSegmentComment ?? true;
+            if (addScoreToSegmentComment)
+                unit.Notes.Add(new Note($"TAUS QE Score: {effectiveScore:F3} ({unit.Quality.ScoreThreshold:F3})") { Reference = seg.Id });
 
             if (effectiveScore >= unit.Quality.ScoreThreshold)
             {
                 seg.State = overThresholdState;
                 unit.Quality.Score = effectiveScore;
                 unit.Provenance.Review.Tool = "TAUS";
-                unit.Notes.Add(new Note($"TAUS QE Score: {effectiveScore:F3} ({unit.Quality.ScoreThreshold:F3})") { Reference = seg.Id });
                 segmentsFinalized++;
+                if (!string.IsNullOrEmpty(result.ApeResult))
+                    unit.Notes.Add(new Note($"Edited by TAUS. {result.Remarks ?? ""}") { Reference = seg.Id });
             }
             else
             {

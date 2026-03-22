@@ -29,4 +29,10 @@ public class EditContentInBackgroundRequest
 
     [Display("Disable automated post-editing (APE)", Description = "Estimate segments only. APE is enabled by default.")]
     public bool? DisableApe { get; set; }
+
+    [Display("Use RAG with APE", Description = "When enabled, Retrieval-Augmented Generation (RAG) is used to enhance the APE output by providing relevant context from the translation memory. RAG is disabled by default.")]
+    public bool? UseRagWithApe { get; set; }
+
+    [Display("APE Resource group ID")]
+    public string? ApeResourceGroupId { get; set; }
 }
