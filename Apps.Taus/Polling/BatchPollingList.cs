@@ -20,52 +20,59 @@ public class BatchPollingList(InvocationContext invocationContext) : TausInvocab
         PollingEventRequest<BatchMemory> request,
         [PollingEventParameter] OnBatchFinishedRequest input)
     {
-        var jobIdsUniqueSet = input.TausBackgroundJobIds.ToHashSet();
+        try {
+            var jobIdsUniqueSet = input.TausBackgroundJobIds.ToHashSet();
 
-        if (jobIdsUniqueSet.Count == 0)
-            throw new PluginMisconfigurationException("At least one Job ID must be provided.");
+            if (jobIdsUniqueSet.Count == 0)
+                throw new PluginMisconfigurationException("At least one Job ID must be provided.");
 
-        var terminalStatuses = new[] { "COMPLETED", "FAILED", "EXPIRED" };
-        var lastPollingTime = DateTime.UtcNow;
-        var noFlightResponse = new PollingEventResponse<BatchMemory, BatchPollingResponse>()
+            var terminalStatuses = new[] { "COMPLETED", "FAILED", "EXPIRED" };
+            var lastPollingTime = DateTime.UtcNow;
+            var noFlightResponse = new PollingEventResponse<BatchMemory, BatchPollingResponse>()
+            {
+                FlyBird = false,
+                Memory = new()
+                {
+                    LastPollingTime = lastPollingTime,
+                    Triggered = false
+                }
+            };
+
+            if (request.Memory is null)
+                return noFlightResponse;
+
+            var listJobsRequest = new TausRequest(ApiEndpoints.ListBatchJobs, Method.Get, Creds);
+            var listJobsResponse = await Client.Paginate<EstimateBatchJob>(listJobsRequest);
+
+            var expectedJobsTerminated = listJobsResponse
+                .Where(j => jobIdsUniqueSet.Contains(j.JobId) && terminalStatuses.Contains(j.Status))
+                .ToList();
+
+            var expectedJobsTerminatedIdsSet = expectedJobsTerminated.Select(j => j.JobId).ToHashSet();
+
+            if (!jobIdsUniqueSet.SetEquals(expectedJobsTerminatedIdsSet))
+                return noFlightResponse;
+
+            return new()
+            {
+                FlyBird = true,
+                Result = new()
+                {
+                    TausCompletedJobIds = expectedJobsTerminated.Where(j => j.Status == "COMPLETED").Select(j => j.JobId),
+                    TausFailedJobIds = expectedJobsTerminated.Where(j => j.Status == "FAILED").Select(j => j.JobId),
+                    TausExpiredJobIds = expectedJobsTerminated.Where(j => j.Status == "EXPIRED").Select(j => j.JobId),
+                },
+                Memory = new()
+                {
+                    LastPollingTime = lastPollingTime,
+                    Triggered = true
+                }
+            };
+        }
+        catch (Exception ex)
         {
-            FlyBird = false,
-            Memory = new()
-            {
-                LastPollingTime = lastPollingTime,
-                Triggered = false
-            }
-        };
-
-        if (request.Memory is null)
-            return noFlightResponse;
-
-        var listJobsRequest = new TausRequest(ApiEndpoints.ListBatchJobs, Method.Get, Creds);
-        var listJobsResponse = await Client.Paginate<EstimateBatchJob>(listJobsRequest);
-
-        var expectedJobsTerminated = listJobsResponse
-            .Where(j => jobIdsUniqueSet.Contains(j.JobId) && terminalStatuses.Contains(j.Status))
-            .ToList();
-
-        var expectedJobsTerminatedIdsSet = expectedJobsTerminated.Select(j => j.JobId).ToHashSet();
-
-        if (!jobIdsUniqueSet.SetEquals(expectedJobsTerminatedIdsSet))
-            return noFlightResponse;
-
-        return new()
-        {
-            FlyBird = true,
-            Result = new()
-            {
-                TausCompletedJobIds = expectedJobsTerminated.Where(j => j.Status == "COMPLETED").Select(j => j.JobId),
-                TausFailedJobIds = expectedJobsTerminated.Where(j => j.Status == "FAILED").Select(j => j.JobId),
-                TausExpiredJobIds = expectedJobsTerminated.Where(j => j.Status == "EXPIRED").Select(j => j.JobId),
-            },
-            Memory = new()
-            {
-                LastPollingTime = lastPollingTime,
-                Triggered = true
-            }
-        };
+            InvocationContext.Logger?.LogError($"[TAUS_OnBatchFinished_Polling] Error: {ex.Message}; Stack trace: {ex.StackTrace?.ToString()}", []);
+            throw;
+        }
     }
 }
