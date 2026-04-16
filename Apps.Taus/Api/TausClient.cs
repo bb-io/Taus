@@ -88,8 +88,6 @@ public class TausClient : BlackBirdRestClient
             request.AddOrUpdateParameter("page", currentPage);
             var response = await ExecuteWithErrorHandling<PaginatedResponse<T>>(request);
 
-            Console.WriteLine(response.Total);
-
             if (response is null)
                 break;
 
