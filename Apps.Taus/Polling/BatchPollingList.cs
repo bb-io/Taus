@@ -41,10 +41,18 @@ public class BatchPollingList(InvocationContext invocationContext) : TausInvocab
             if (request.Memory is null)
                 return noFlightResponse;
 
-            var listJobsRequest = new TausRequest(ApiEndpoints.ListBatchJobs, Method.Get, Creds);
-            var listJobsResponse = await Client.Paginate<EstimateBatchJob>(listJobsRequest);
+            var jobs = new List<EstimateBatchJob>();
 
-            var expectedJobsTerminated = listJobsResponse
+            foreach (var jobId in jobIdsUniqueSet)
+            {
+                var getJobRequest = new TausRequest(ApiEndpoints.GetBatchJob, Method.Get, Creds)
+                    .AddUrlSegment("job_id", jobId);
+
+                var job = await Client.ExecuteWithErrorHandling<EstimateBatchJob>(getJobRequest);
+                jobs.Add(job);
+            }
+
+            var expectedJobsTerminated = jobs
                 .Where(j => jobIdsUniqueSet.Contains(j.JobId) && terminalStatuses.Contains(j.Status))
                 .ToList();
 

@@ -6,6 +6,7 @@ public static class ApiEndpoints
     public const string EstimateV2 = "/2.0/estimate";
     public const string EstimateFileUpload = "/2.0/estimate/file/upload";
     public const string EstimateBatchJob = "/2.0/estimate-batch/job";
+    public const string GetBatchJob = "/2.0/estimate-batch/job/{job_id}";
     public const string ListBatchJobs = "/2.0/estimate-batch/job/";
     public const string BatchJobDownload = "/2.0/estimate-batch/job/{job_id}/download";
 }

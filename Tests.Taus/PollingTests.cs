@@ -18,7 +18,7 @@ public class PollingTests : TestBase
         {
             Memory = new()
             {
-                LastPollingTime = DateTime.UtcNow.AddMinutes(-10),
+                LastPollingTime = DateTime.UtcNow.AddMinutes(-210),
                 Triggered = false
             }
         };
@@ -26,8 +26,8 @@ public class PollingTests : TestBase
         {
             TausBackgroundJobIds =
             [
-                "0394f618-e41c-41c1-9d37-417c98cd6f1c",
-                "5f346c19-3da0-4bc8-9680-1dff71827908",
+                "1cbffa11-b71e-428e-be48-aa0549ef5045",
+                "75cdf077-68ef-4bea-960f-2e7bdda9d2b8",
             ]
         };
 
