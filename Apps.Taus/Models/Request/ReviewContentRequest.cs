@@ -17,6 +17,9 @@ public class ReviewContentRequest : IReviewFileInput
     [Display("Score threshold", Description = "All segments above this score will automatically be finalized")]
     [StaticDataSource(typeof(ThresholdHandler))]
     public float Threshold { get; set; }
+
+    [Display("Exclude segment state qualifiers", Description = "Segments with the specified qualifiers are excluded from review. If no qualifiers are provided, all eligible segments are reviewed.")]
+    public IEnumerable<string>? ExcludeSegmentStateQualifiers { get; set; }
     
     [Display("Output file handling", Description = "Determine the format of the output file. The default Blackbird behavior is to convert to XLIFF for future steps."), StaticDataSource(typeof(ProcessFileFormatHandler))]
     public string? OutputFileHandling { get; set; }

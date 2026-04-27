@@ -2,6 +2,7 @@
 using Apps.Taus.Models.Estimate;
 using Apps.Taus.Models.Request;
 using Apps.Taus.Models.Response;
+using Apps.Taus.Services.SegmentProcessing;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
@@ -52,6 +53,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
 
         var srcLanguage = content.SourceLanguage;
         var trgLanguage = input.TargetLanguage ?? content.TargetLanguage;
+        var excludedSegmentStateQualifiers = input.ExcludeSegmentStateQualifiers ?? [];
 
         var processedSegmentsCount = 0;
         var finalizedSegmentsCount = 0;
@@ -65,6 +67,9 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
 
             foreach (var segment in batch)
             {
+                if (!SegmentProcessingHelper.ShouldProcessSegment(segment.Segment, qualifiersToExclude: excludedSegmentStateQualifiers))
+                    continue;
+
                 Task<EstimateOutput> EstimateAction() => Estimate(new EstimateInput
                 {
                     Source = segment.Segment.GetSource(),
@@ -75,7 +80,6 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
 
                 var estimationResult = await EstimateAction();
                 result.Add(estimationResult);
-
             }
             return result;
         }
