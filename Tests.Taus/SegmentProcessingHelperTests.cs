@@ -28,13 +28,13 @@ public class SegmentProcessingHelperTests
     }
 
     [TestMethod]
-    public void ShouldProcessSegment_WithStateFilter_ExcludesReviewedSegment()
+    public void ShouldProcessSegment_WithStateFilter_ExcludesNonMatchingSegmentState()
     {
-        var segment = CreateSegment("reviewed", null, "Translated text");
+        var segment = CreateSegment("translated", null, "Translated text");
 
         var result = SegmentProcessingHelper.ShouldProcessSegment(
             segment,
-            [SegmentState.Initial, SegmentState.Translated],
+            [SegmentState.Final],
             Array.Empty<string>());
 
         Assert.IsFalse(result);

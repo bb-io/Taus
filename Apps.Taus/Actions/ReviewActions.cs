@@ -67,9 +67,6 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
 
             foreach (var segment in batch)
             {
-                if (!SegmentProcessingHelper.ShouldProcessSegment(segment.Segment, qualifiersToExclude: excludedSegmentStateQualifiers))
-                    continue;
-
                 Task<EstimateOutput> EstimateAction() => Estimate(new EstimateInput
                 {
                     Source = segment.Segment.GetSource(),
@@ -85,7 +82,16 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         }
 
         // When TAUS implements batching, this can be utilized better
-        var units = await content.GetUnits().Batch(10, x => !x.IsIgnorbale && !x.IsInitial && x.State != SegmentState.Final).Process(BatchProcess);
+        var units = await content.GetUnits()
+            .Batch(
+                batchSize: 10,
+                segmentFilter: segment => !segment.IsIgnorbale
+                    && !segment.IsInitial
+                    && segment.State != SegmentState.Final
+                    && SegmentProcessingHelper.ShouldProcessSegment(
+                        segment,
+                        qualifiersToExclude: excludedSegmentStateQualifiers))
+            .Process(BatchProcess);
 
         foreach (var (unit, results) in units)
         {
