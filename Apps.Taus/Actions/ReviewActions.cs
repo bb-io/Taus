@@ -2,6 +2,7 @@
 using Apps.Taus.Models.Estimate;
 using Apps.Taus.Models.Request;
 using Apps.Taus.Models.Response;
+using Apps.Taus.Services.SegmentProcessing;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
@@ -52,6 +53,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
 
         var srcLanguage = content.SourceLanguage;
         var trgLanguage = input.TargetLanguage ?? content.TargetLanguage;
+        var excludedSegmentStateQualifiers = input.ExcludeSegmentStateQualifiers ?? [];
 
         var processedSegmentsCount = 0;
         var finalizedSegmentsCount = 0;
@@ -75,13 +77,21 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
 
                 var estimationResult = await EstimateAction();
                 result.Add(estimationResult);
-
             }
             return result;
         }
 
         // When TAUS implements batching, this can be utilized better
-        var units = await content.GetUnits().Batch(10, x => !x.IsIgnorbale && !x.IsInitial && x.State != SegmentState.Final).Process(BatchProcess);
+        var units = await content.GetUnits()
+            .Batch(
+                batchSize: 10,
+                segmentFilter: segment => !segment.IsIgnorbale
+                    && !segment.IsInitial
+                    && segment.State != SegmentState.Final
+                    && SegmentProcessingHelper.ShouldProcessSegment(
+                        segment,
+                        qualifiersToExclude: excludedSegmentStateQualifiers))
+            .Process(BatchProcess);
 
         foreach (var (unit, results) in units)
         {

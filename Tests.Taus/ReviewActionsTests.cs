@@ -13,9 +13,12 @@ public class ReviewActionsTests : TestBase
     public async Task ReviewContent_ValidXliff_Success()
     {
         var actions = new ReviewActions(InvocationContext, FileManager);
-        var file = new FileReference { Name = "About Us_en.html.xliff" };
+        var file = new FileReference { Name = "Sample text.html.xlf" };
 
-        var result = await actions.EstimateContent(new ReviewContentRequest { File = file, Threshold = 0.8f });
+        var result = await actions.EstimateContent(new ReviewContentRequest { File = file,  
+        //ExcludeSegmentStateQualifiers = ["mt-suggestion"], 
+            //OutputFileHandling = "original"
+        });
 
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
         Assert.IsNotNull(result);

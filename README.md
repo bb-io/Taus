@@ -32,6 +32,7 @@ Before you can connect you need to make sure that:
 
 - **Review** Review translated content and output quality scores for each segment. Advanced settings:
   - **Target language**: Override the target language used for quality estimation.
+  - **Exclude segment state qualifiers**: Exclude segments that contain the specified state qualifiers.
   - **Output file handling**: Choose the output file format for downstream steps.
 - **Review text** Review translated text and output a quality score.
 

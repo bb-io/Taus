@@ -1,6 +1,7 @@
 using System.Text;
 using System.Xml;
 using Apps.Taus.Models.XliffBatch;
+using Apps.Taus.Services.SegmentProcessing;
 using Blackbird.Filters.Enums;
 using Blackbird.Filters.Transformations;
 
@@ -56,7 +57,7 @@ public sealed class XliffBatchBuilder
 
             foreach (var segment in unit.Segments)
             {
-                if (!ShouldProcessSegment(segment, statesToInclude, qualifiersToExclude))
+                if (!SegmentProcessingHelper.ShouldProcessSegment(segment, statesToInclude, qualifiersToExclude))
                     continue;
 
                 var segmentId = GetOrGenerateSegmentId(segment, idGenerator, sequenceIndex, out var mapping);
@@ -75,28 +76,6 @@ public sealed class XliffBatchBuilder
         writer.Flush();
 
         return (stringWriter.ToString(), idMappings);
-    }
-
-    private static bool ShouldProcessSegment(
-        Segment segment,
-        IReadOnlyList<SegmentState> statesToInclude,
-        IReadOnlyList<string> qualifiersToExclude)
-    {
-        if (segment.IsIgnorbale)
-            return false;
-
-        var segmentState = segment.State ?? SegmentState.Initial;
-        if (!statesToInclude.Contains(segmentState))
-            return false;
-
-        if (qualifiersToExclude.Any())
-        {
-            var stateQualifier = segment.TargetAttributes.FirstOrDefault(a => a.Name == "state-qualifier");
-            if (stateQualifier is not null && qualifiersToExclude.Contains(stateQualifier.Value))
-                return false;
-        }
-
-        return !string.IsNullOrWhiteSpace(segment.GetTarget());
     }
 
     private static string GetOrGenerateSegmentId(
