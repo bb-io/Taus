@@ -1,0 +1,88 @@
+<?xml version='1.0' encoding='UTF-8'?><xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:m="http://www.memsource.com/mxlf/2.0" version="1.2" m:version="2.15" m:level="2">
+<file original="Sample text.html" source-language="en" target-language="uk" datatype="x-undefined" m:file-format="HTML" m:task-id="wsOvbO51s05clzWF1_dc10" m:begin-group-id="0" m:end-group-id="4" m:transmem-ignore-tag-metadata="yes" m:project-uid="k0AU8tl13nEpRkITEBIb28" m:job-uid="Nk364Wbd2HGh2xWRuUbfP3">
+<header>
+<m:in-ctx-preview-skel bilingual="false">
+<![CDATA[<h1><span id="m-tgroup_0" class="m-tgroup"></span></h1>
+<p><span id="m-tgroup_1" class="m-tgroup"></span> <span id="m-tgroup_2" class="m-tgroup"></span></p>
+<span id="m-tgroup_3" class="m-tgroup"></span><p><span id="m-tgroup_4" class="m-tgroup"></span></p>]]>
+</m:in-ctx-preview-skel>
+</header>
+<body>
+
+<group id="0" m:para-id="0">
+<trans-unit id="wsOvbO51s05clzWF1_dc10:0" xml:space="preserve" m:score="0.0" m:gross-score="0.0" m:trans-origin="null" m:confirmed="0" m:locked="false" m:para-id="0" m:created-at="1776956807500" m:created-by="1732186" m:modified-at="1776956807500" m:modified-by="1732186" m:level-edited="false">
+<source>Governance for Multilingual Content Operations</source>
+<target>Управління операціями</target>
+<alt-trans origin="machine-trans"><target/></alt-trans>
+<alt-trans origin="memsource-tm"><target/></alt-trans>
+</trans-unit>
+</group>
+<group id="1" m:para-id="1">
+<trans-unit id="wsOvbO51s05clzWF1_dc10:1" xml:space="preserve" m:score="0.0" m:gross-score="0.0" m:trans-origin="null" m:locked-by="ex" m:confirmed="0" m:locked="true" m:para-id="1" m:created-at="1776956821488" m:created-by="1732186" m:modified-at="1776956821488" m:modified-by="1732186" m:level-edited="false">
+<source>Blackbird unifies content, context, and automation into one orchestration layer.</source>
+<target>Blackbird об'єднує контент, контекст та автоматизацію в єдиний рівень координації.</target>
+<alt-trans origin="machine-trans"><target/></alt-trans>
+<alt-trans origin="memsource-tm"><target/></alt-trans>
+</trans-unit>
+</group>
+<group id="2" m:para-id="1">
+<trans-unit id="wsOvbO51s05clzWF1_dc10:2" xml:space="preserve" m:score="0.0" m:gross-score="0.0" m:trans-origin="null" m:confirmed="0" m:locked="false" m:para-id="1" m:created-at="1776956851644" m:created-by="1732186" m:modified-at="1776956851644" m:modified-by="1732186" m:level-edited="false">
+<source>Built on iPaaS infrastructure with a data fabric and a persistent memory layer, it adapts, transforms, and governs enterprise content at scale.</source>
+<target>Ця система, побудована на базі інфраструктури iPaaS з використанням архітектури Data Fabric забезпечує адаптацію та управління корпоративним контентом у великих обсягах.</target>
+<alt-trans origin="machine-trans"><target/></alt-trans>
+<alt-trans origin="memsource-tm"><target/></alt-trans>
+</trans-unit>
+</group>
+<group id="3" m:para-id="2">
+
+<m:in-ctx-preview-metadata>
+<m:mark id="1">
+<m:open-mark-content><![CDATA[<button>]]></m:open-mark-content>
+</m:mark>
+<m:mark id="2">
+<m:open-mark-content><![CDATA[<button>]]></m:open-mark-content>
+</m:mark>
+</m:in-ctx-preview-metadata>
+<trans-unit id="wsOvbO51s05clzWF1_dc10:3" xml:space="preserve" m:score="0.0" m:gross-score="0.0" m:trans-origin="null" m:locked-by="ex" m:confirmed="0" m:locked="true" m:para-id="2" m:created-at="1776956876698" m:created-by="1732186" m:modified-at="1776956876698" m:modified-by="1732186" m:level-edited="false">
+<source>{1}Book a Demo{2}</source>
+<target>{1}Забронюйте!{2}</target>
+<alt-trans origin="machine-trans"><target/></alt-trans>
+<alt-trans origin="memsource-tm"><target/></alt-trans>
+<m:tunit-metadata>
+<m:mark id="1">
+<m:type>button</m:type>
+<m:content>&lt;button&gt;</m:content>
+</m:mark>
+<m:mark id="2">
+<m:type>button</m:type>
+<m:content>&lt;button&gt;</m:content>
+</m:mark>
+</m:tunit-metadata>
+<m:tunit-target-metadata>
+<m:mark id="1">
+<m:type>button</m:type>
+<m:content>&lt;button&gt;</m:content>
+</m:mark>
+<m:mark id="2">
+<m:type>button</m:type>
+<m:content>&lt;button&gt;</m:content>
+</m:mark>
+</m:tunit-target-metadata>
+</trans-unit>
+</group>
+<group id="4" m:para-id="3">
+<trans-unit id="wsOvbO51s05clzWF1_dc10:4" xml:space="preserve" m:score="0.0" m:gross-score="0.0" m:trans-origin="null" m:locked-by="ex" m:confirmed="0" m:locked="true" m:para-id="3" m:created-at="1776956936306" m:created-by="1732186" m:modified-at="1776956936306" m:modified-by="1732186" m:level-edited="false">
+<source>From raw content to multilingual experiences — Blackbird transforms how global teams orchestrate, adapt, and automate content with AI, interoperability, and human-in-the-loop control.</source>
+<target>Від необробленого контенту до багфторівневих рішень — Blackbird змінює підхід глобальних команд до координації, адаптації та автоматизації контенту за допомогою штучного інтелекту, сумісності та контролю з участю людини.</target>
+<alt-trans origin="machine-trans"><target/></alt-trans>
+<alt-trans origin="memsource-tm"><target/></alt-trans>
+</trans-unit>
+</group>
+</body>
+</file>
+<m:extra>
+<m:users>
+<m:user id="1732186" uid="xdhlcxmlTcop89QQF4AGN0" username="alex.terekhov@blackbird.io" fullname="Alex Terekhov"/>
+</m:users>
+</m:extra>
+</xliff>

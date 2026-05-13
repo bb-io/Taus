@@ -55,6 +55,9 @@ public sealed class XliffBatchBuilder
             if (unit.State == SegmentState.Reviewed || unit.State == SegmentState.Final)
                 continue;
 
+            if (unit.Translate == false)
+                continue;
+
             foreach (var segment in unit.Segments)
             {
                 if (!SegmentProcessingHelper.ShouldProcessSegment(segment, statesToInclude, qualifiersToExclude))

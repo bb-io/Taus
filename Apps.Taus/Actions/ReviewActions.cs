@@ -83,6 +83,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
 
         // When TAUS implements batching, this can be utilized better
         var units = await content.GetUnits()
+            .Where(unit => unit.Translate != false)
             .Batch(
                 batchSize: 10,
                 segmentFilter: segment => !segment.IsIgnorbale
