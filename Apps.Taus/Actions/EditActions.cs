@@ -99,7 +99,10 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         }
 
         // When TAUS implements batching, this can be utilized better
-        var units = await content.GetUnits().Batch(10, x => !x.IsIgnorbale && !x.IsInitial && x.State != SegmentState.Final).Process(BatchProcess);
+        var units = await content.GetUnits()
+            .Where(unit => unit.Translate != false)
+            .Batch(10, x => !x.IsIgnorbale && !x.IsInitial && x.State != SegmentState.Final)
+            .Process(BatchProcess);
 
         foreach (var (unit, results) in units)
         {
