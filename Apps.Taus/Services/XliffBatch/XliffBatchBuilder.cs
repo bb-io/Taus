@@ -16,7 +16,8 @@ public sealed class XliffBatchBuilder
         IEnumerable<SegmentState>? segmentStatesToInclude = null,
         IEnumerable<string>? segmentStateQualifiersToExclude = null,
         string? sourceLanguageOverride = null,
-        string? targetLanguageOverride = null)
+        string? targetLanguageOverride = null,
+        string? translationToolFilter = null)
     {
         ArgumentNullException.ThrowIfNull(transformation);
 
@@ -52,6 +53,9 @@ public sealed class XliffBatchBuilder
 
         foreach (var unit in transformation.GetUnits())
         {
+            if (!SegmentProcessingHelper.ShouldProcessUnit(unit, translationToolFilter))
+                continue;
+
             if (unit.State == SegmentState.Reviewed || unit.State == SegmentState.Final)
                 continue;
 

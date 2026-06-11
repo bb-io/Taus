@@ -6,6 +6,7 @@ using Apps.Taus.Models.Request;
 using Apps.Taus.Models.Response;
 using Apps.Taus.Models.TausApiResponseDtos;
 using Apps.Taus.Models.XliffBatch;
+using Apps.Taus.Services.SegmentProcessing;
 using Apps.Taus.Services.XliffBatch;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
@@ -98,9 +99,8 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             return result;
         }
 
-        // When TAUS implements batching, this can be utilized better
         var units = await content.GetUnits()
-            .Where(unit => unit.Translate != false)
+            .Where(unit => unit.Translate != false && SegmentProcessingHelper.ShouldProcessUnit(unit, input.TranslationToolFilter))
             .Batch(10, x => !x.IsIgnorbale && !x.IsInitial && x.State != SegmentState.Final)
             .Process(BatchProcess);
 
@@ -321,7 +321,13 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             throw new PluginMisconfigurationException("The target language is not defined in the bilingual file. Please assign the target language in this action.");
 
         var xliffBatchBuilder = new XliffBatchBuilder();
-        var (xliffContent, idMappings) = xliffBatchBuilder.Build(content, segmentStatesToEstimate, segmentStateQualifiersToExclude, sourceLanguage, targetLanguage);
+        var (xliffContent, idMappings) = xliffBatchBuilder.Build(
+            content,
+            segmentStatesToEstimate,
+            segmentStateQualifiersToExclude,
+            sourceLanguage,
+            targetLanguage,
+            input.TranslationToolFilter);
 
         var totalSegments = content.GetUnits().Select(u => u.Segments.Count).Sum();
         var processedSegments = idMappings.Count;

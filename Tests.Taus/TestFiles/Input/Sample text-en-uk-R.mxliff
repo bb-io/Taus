@@ -43,7 +43,7 @@
 <m:open-mark-content><![CDATA[<button>]]></m:open-mark-content>
 </m:mark>
 </m:in-ctx-preview-metadata>
-<trans-unit id="wsOvbO51s05clzWF1_dc10:3" xml:space="preserve" m:score="0.0" m:gross-score="0.0" m:trans-origin="null" m:locked-by="ex" m:confirmed="0" m:locked="true" m:para-id="2" m:created-at="1776956876698" m:created-by="1732186" m:modified-at="1776956876698" m:modified-by="1732186" m:level-edited="false">
+<trans-unit id="wsOvbO51s05clzWF1_dc10:3" xml:space="preserve" m:score="0.0" m:gross-score="0.0" m:trans-origin="tm" m:locked-by="ex" m:confirmed="0" m:locked="true" m:para-id="2" m:created-at="1776956876698" m:created-by="1732186" m:modified-at="1776956876698" m:modified-by="1732186" m:level-edited="false">
 <source>{1}Book a Demo{2}</source>
 <target>{1}Забронюйте!{2}</target>
 <alt-trans origin="machine-trans"><target/></alt-trans>
@@ -71,7 +71,7 @@
 </trans-unit>
 </group>
 <group id="4" m:para-id="3">
-<trans-unit id="wsOvbO51s05clzWF1_dc10:4" xml:space="preserve" m:score="0.0" m:gross-score="0.0" m:trans-origin="null" m:locked-by="ex" m:confirmed="0" m:locked="true" m:para-id="3" m:created-at="1776956936306" m:created-by="1732186" m:modified-at="1776956936306" m:modified-by="1732186" m:level-edited="false">
+<trans-unit id="wsOvbO51s05clzWF1_dc10:4" xml:space="preserve" m:score="0.0" m:gross-score="0.0" m:trans-origin="mt" m:locked-by="ex" m:confirmed="0" m:locked="true" m:para-id="3" m:created-at="1776956936306" m:created-by="1732186" m:modified-at="1776956936306" m:modified-by="1732186" m:level-edited="false">
 <source>From raw content to multilingual experiences — Blackbird transforms how global teams orchestrate, adapt, and automate content with AI, interoperability, and human-in-the-loop control.</source>
 <target>Від необробленого контенту до багфторівневих рішень — Blackbird змінює підхід глобальних команд до координації, адаптації та автоматизації контенту за допомогою штучного інтелекту, сумісності та контролю з участю людини.</target>
 <alt-trans origin="machine-trans"><target/></alt-trans>

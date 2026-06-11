@@ -20,7 +20,10 @@ public class ReviewContentRequest : IReviewFileInput
 
     [Display("Exclude segment state qualifiers", Description = "Segments with the specified qualifiers are excluded from review. If no qualifiers are provided, all eligible segments are reviewed.")]
     public IEnumerable<string>? ExcludeSegmentStateQualifiers { get; set; }
-    
+
+    [Display("Translation tool contains", Description = "Only process units whose translation provenance tool contains this value. Match is case-insensitive.")]
+    public string? TranslationToolFilter { get; set; }
+
     [Display("Output file handling", Description = "Determine the format of the output file. The default Blackbird behavior is to convert to XLIFF for future steps."), StaticDataSource(typeof(ProcessFileFormatHandler))]
     public string? OutputFileHandling { get; set; }
 }
