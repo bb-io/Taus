@@ -16,7 +16,7 @@ public class BackgroundProcessingIntergratedTests : TestBase
     public async Task EditContentInBackground_Works()
     {
         var actions = new EditActions(InvocationContext, FileManager);
-        var filesToProcess = new List<FileReference> { new() { Name = "Sample text.html.xlf" } };
+        var filesToProcess = new List<FileReference> { new() { Name = "sample-for-upload.xliff" } };
 
         //
         // Create batch processing job
@@ -25,6 +25,7 @@ public class BackgroundProcessingIntergratedTests : TestBase
         {
             Files = filesToProcess,
             Threshold = 0.8f,
+            TranslationToolFilter = "(mt)",
         };
 
         var createBatchJobResponse = await actions.EditContentInBackground(createBatchJobRequest);

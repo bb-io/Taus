@@ -27,6 +27,9 @@ public class EditContentInBackgroundRequest
     [Display("Exclude segment state qualifiers", Description = "Segments with the specified qualifiers are excluded from editing. If no qualifiers are provided, all segments are included in the APE job. For XTM, it's recommended to use 'leveraged-tm' and 'leveraged-inherited'.")]
     public IEnumerable<string>? ExcludeSegmentStateQualifiers { get; set; }
 
+    [Display("Translation tool contains", Description = "Only process units whose translation provenance tool contains this value. Match is case-insensitive.")]
+    public string? TranslationToolFilter { get; set; }
+
     [Display("Disable automated post-editing (APE)", Description = "Estimate segments only. APE is enabled by default.")]
     public bool? DisableApe { get; set; }
 

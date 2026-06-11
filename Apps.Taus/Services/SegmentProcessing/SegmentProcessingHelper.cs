@@ -5,6 +5,17 @@ namespace Apps.Taus.Services.SegmentProcessing;
 
 public static class SegmentProcessingHelper
 {
+    public static bool ShouldProcessUnit(Unit unit, string? translationToolFilter)
+    {
+        if (!string.IsNullOrWhiteSpace(translationToolFilter))
+        {
+            return unit.Provenance.Translation.Tool
+                ?.Contains(translationToolFilter, StringComparison.OrdinalIgnoreCase) == true;
+        }
+
+        return true;
+    }
+
     public static bool ShouldProcessSegment(
         Segment segment,
         IEnumerable<SegmentState>? statesToInclude = null,

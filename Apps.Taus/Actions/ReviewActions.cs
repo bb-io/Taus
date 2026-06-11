@@ -25,35 +25,21 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
     public async Task<ContentReviewResponse> EstimateContent([ActionParameter] ReviewContentRequest input)
     {
         var stream = await fileManagementClient.DownloadAsync(input.File);
-        var memoryStream = new MemoryStream();
-        await stream.CopyToAsync(memoryStream);
-        memoryStream.Position = 0;
+        var contentString = await stream.ReadString();
+        var isXliff1 = Xliff1Serializer.IsXliff1(contentString);
 
-        var bytes = memoryStream.ToArray();
-        var contentString = System.Text.Encoding.UTF8.GetString(bytes);
-
-        var content = Transformation.Parse(contentString, input.File.Name);
-        if (content == null)
-        {
-            throw new PluginApplicationException(
-                "Something went wrong parsing this XLIFF file. Please send a copy of this file to the team for inspection!");
-        }
-
-        if (content.SourceLanguage == null)
-        {
-            throw new PluginMisconfigurationException(
-                "The source language is not defined yet. Please assign the source language in this action.");
-        }
-
-        if (content.TargetLanguage == null)
-        {
-            throw new PluginMisconfigurationException(
-                "The target language is not defined yet. Please assign the target language in this action.");
-        }
+        var content = Transformation.Parse(contentString, input.File.Name)
+            ?? throw new PluginApplicationException("Something went wrong parsing this XLIFF file. Please send a copy of this file to the Blackbird support for inspection.");
 
         var srcLanguage = content.SourceLanguage;
         var trgLanguage = input.TargetLanguage ?? content.TargetLanguage;
         var excludedSegmentStateQualifiers = input.ExcludeSegmentStateQualifiers ?? [];
+
+        if (string.IsNullOrWhiteSpace(srcLanguage))
+            throw new PluginMisconfigurationException("The source language is not defined in the received file.");
+
+        if (string.IsNullOrWhiteSpace(trgLanguage))
+            throw new PluginMisconfigurationException("The target language is not defined in the received file. Please, assign the target language in the input.");
 
         var processedSegmentsCount = 0;
         var finalizedSegmentsCount = 0;
@@ -81,9 +67,8 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
             return result;
         }
 
-        // When TAUS implements batching, this can be utilized better
         var units = await content.GetUnits()
-            .Where(unit => unit.Translate != false)
+            .Where(unit => unit.Translate != false && SegmentProcessingHelper.ShouldProcessUnit(unit, input.TranslationToolFilter))
             .Batch(
                 batchSize: 10,
                 segmentFilter: segment => !segment.IsIgnorbale
@@ -130,7 +115,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         Stream streamResult;
         if (input.OutputFileHandling == "original")
         {
-            if (Xliff1Serializer.IsXliff1(contentString))
+            if (isXliff1)
             {
                 var xliff1String = Xliff1Serializer.Serialize(content);
                 streamResult = xliff1String.ToStream();
