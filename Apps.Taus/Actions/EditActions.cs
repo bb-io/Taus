@@ -15,12 +15,11 @@ using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Blueprints;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
+using Blackbird.Filters.Bilingual.Xliff1;
 using Blackbird.Filters.Constants;
 using Blackbird.Filters.Enums;
 using Blackbird.Filters.Extensions;
 using Blackbird.Filters.Transformations;
-using Blackbird.Filters.Xliff.Xliff1;
-using Blackbird.Filters.Xliff.Xliff2;
 using Newtonsoft.Json;
 using RestSharp;
 using System.Globalization;
@@ -38,19 +37,9 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     public async Task<ContentEditResponse> EditContent([ActionParameter] EditContentRequest input)
     {
         var stream = await fileManagementClient.DownloadAsync(input.File);
-        var memoryStream = new MemoryStream();
-        await stream.CopyToAsync(memoryStream);
-        memoryStream.Position = 0;
-
-        var bytes = memoryStream.ToArray();
-        var contentString = System.Text.Encoding.UTF8.GetString(bytes);
-
-        var content = Transformation.Parse(contentString, input.File.Name);
-        if (content == null)
-        {
-            throw new PluginApplicationException(
-                "Something went wrong parsing this XLIFF file. Please send a copy of this file to the team for inspection!");
-        }
+        var loadResult = Transformation.Load(stream, input.File.Name, input.File.ContentType);
+        if (!loadResult.Success) throw new PluginMisconfigurationException(loadResult.Error);
+        var content = loadResult.Value;
 
         if (content.SourceLanguage == null)
         {
@@ -159,21 +148,9 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         Stream streamResult;
         if (input.OutputFileHandling == "original")
         {
-            if (Xliff1Serializer.IsXliff1(contentString))
-            {
-                var xliff1String = Xliff1Serializer.Serialize(content);
-                streamResult = xliff1String.ToStream();
-            }
-            else if (Xliff2Serializer.IsXliff2(contentString))
-            {
-                var xliff2String = Xliff2Serializer.Serialize(content);
-                streamResult = xliff2String.ToStream();
-            }
-            else
-            {
-                var targetContent = content.Target();
-                streamResult = targetContent.Serialize().ToStream();
-            }
+            var targetContentResult = content.Target();
+            if (!targetContentResult.Success) throw new PluginMisconfigurationException(targetContentResult.Error);
+            streamResult = targetContentResult.Value.ToStream();
         }
         else
         {
@@ -259,9 +236,9 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         foreach (var transformationFileRef in request.TausTransformationFiles)
         {
             var transformationStream = await fileManagementClient.DownloadAsync(transformationFileRef);
-            using var reader = new StreamReader(transformationStream);
-            var contentString = await reader.ReadToEndAsync();
-            var transformation = Transformation.Parse(contentString, transformationFileRef.Name);
+            var transformationResult = Transformation.Load(transformationStream, transformationFileRef.Name);
+            if (!transformationResult.Success) throw new PluginMisconfigurationException(transformationResult.Error);
+            var transformation = transformationResult.Value;
 
             // Extract Job ID from metadata
             var expectedJobId = transformation.MetaData.Find(m => 
@@ -302,10 +279,9 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     {
         await using var stream = await fileManagementClient.DownloadAsync(file);
         using var reader = new StreamReader(stream);
-        var contentString = await reader.ReadToEndAsync();
-
-        var content = Transformation.Parse(contentString, file.Name)
-            ?? throw new PluginApplicationException("Something went wrong parsing this bilingual file. Please send a copy of this file to the team for inspection!");
+        var loadResult = Transformation.Load(stream, file.Name, file.ContentType);
+        if (!loadResult.Success) throw new PluginMisconfigurationException(loadResult.Error);
+        var content = loadResult.Value;
 
         var sourceLanguage = input.SourceLanguage ?? content.SourceLanguage;
         var targetLanguage = input.TargetLanguage ?? content.TargetLanguage;
@@ -337,7 +313,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         var batchRequest = new TausRequest(ApiEndpoints.EstimateBatchJob, Method.Post, Creds)
             .AddParameter("source_language", sourceLanguage)
             .AddParameter("target_language", targetLanguage)
-            .AddFile("file", () => xliffStream, Path.GetFileNameWithoutExtension(file.Name) + ".xliff", MediaTypes.Xliff);
+            .AddFile("file", () => xliffStream, Path.GetFileNameWithoutExtension(file.Name) + ".xliff", MediaTypes.Xliff2);
 
         if (input.DisableApe != true)
             batchRequest.AddParameter("ape_threshold", input.Threshold.ToString(CultureInfo.InvariantCulture));
@@ -368,9 +344,9 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         }
 
         var transformationFileRef = await fileManagementClient.UploadAsync(
-            Xliff2Serializer.Serialize(content).ToStream(),
-            "application/xliff+xml",
-            content.XliffFileName);
+            content.ToStream(),
+            MediaTypes.Xliff2,
+            content.BilingualFileName);
 
         return (batchResponse.JobId, transformationFileRef, totalSegments, processedSegments);
     }
@@ -391,7 +367,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
 
         var fileDownloadRequest = new TausRequest(ApiEndpoints.BatchJobDownload, Method.Get, Creds)
             .AddUrlSegment("job_id", completedJobId)
-            .AddOrUpdateHeader("Accept", MediaTypes.Xliff);
+            .AddOrUpdateHeader("Accept", MediaTypes.Xliff2);
 
         var batchResponse = await Client.ExecuteWithRetry(fileDownloadRequest);
             
@@ -481,25 +457,28 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         FileReference resultFile;
         if (request.OutputFileHandling == "original")
         {
-            var targetContent = transformation.Target();
+            var targetContentResult = transformation.Target();
+            if (!targetContentResult.Success) throw new PluginMisconfigurationException(targetContentResult.Error);
+            var targetContent = targetContentResult.Value;
             resultFile = await fileManagementClient.UploadAsync(
-                targetContent.Serialize().ToStream(),
+                targetContent.ToStream(),
                 targetContent.OriginalMediaType,
                 targetContent.OriginalName);
         }
         else if (request.OutputFileHandling == "xliff1")
         {
+            var xliffStream = Xliff1Serializer.Serialize(transformation).ToStream();
             resultFile = await fileManagementClient.UploadAsync(
-                Xliff1Serializer.Serialize(transformation).ToStream(),
-                MediaTypes.Xliff,
-                transformation.XliffFileName);
+                xliffStream,
+                MediaTypes.Xliff1,
+                transformation.BilingualFileName);
         }
         else
         {
             resultFile = await fileManagementClient.UploadAsync(
                 transformation.Serialize().ToStream(),
-                MediaTypes.Xliff,
-                transformation.XliffFileName);
+                MediaTypes.Xliff2,
+                transformation.BilingualFileName);
         }
 
         var averageScore = scoresCount > 0 ? scoreSum / scoresCount : 0f;

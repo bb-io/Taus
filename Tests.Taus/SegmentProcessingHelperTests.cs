@@ -1,5 +1,6 @@
 using Apps.Taus.Services.SegmentProcessing;
 using Blackbird.Filters.Enums;
+using Blackbird.Filters.Extensions;
 using Blackbird.Filters.Transformations;
 
 namespace Tests.Taus;
@@ -43,7 +44,7 @@ public class SegmentProcessingHelperTests
     private static Segment CreateSegment(string state, string? qualifier, string target)
     {
         var qualifierAttribute = qualifier is null ? string.Empty : $" state-qualifier=\"{qualifier}\"";
-        var transformation = Transformation.Parse($$"""
+        var transformation = Transformation.Load($$"""
 <?xml version="1.0" encoding="UTF-8"?>
 <xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
   <file original="sample.html" source-language="en" target-language="de" datatype="plaintext">
@@ -55,7 +56,7 @@ public class SegmentProcessingHelperTests
     </body>
   </file>
 </xliff>
-""", "sample.xlf");
+""".ToStream(), "sample.xlf").Value;
 
         return transformation!.GetUnits().Single().Segments.Single();
     }
