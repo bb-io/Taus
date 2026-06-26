@@ -12,7 +12,6 @@ using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Filters.Enums;
 using Blackbird.Filters.Extensions;
 using Blackbird.Filters.Transformations;
-using Blackbird.Filters.Xliff.Xliff1;
 
 namespace Apps.Taus.Actions;
 
@@ -25,11 +24,9 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
     public async Task<ContentReviewResponse> EstimateContent([ActionParameter] ReviewContentRequest input)
     {
         var stream = await fileManagementClient.DownloadAsync(input.File);
-        var contentString = await stream.ReadString();
-        var isXliff1 = Xliff1Serializer.IsXliff1(contentString);
-
-        var content = Transformation.Parse(contentString, input.File.Name)
-            ?? throw new PluginApplicationException("Something went wrong parsing this XLIFF file. Please send a copy of this file to the Blackbird support for inspection.");
+        var loadResult = Transformation.Load(stream, input.File.Name, input.File.ContentType);
+        if (!loadResult.Success) throw new PluginMisconfigurationException(loadResult.Error);
+        var content = loadResult.Value;
 
         var srcLanguage = content.SourceLanguage;
         var trgLanguage = input.TargetLanguage ?? content.TargetLanguage;
@@ -115,16 +112,9 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
         Stream streamResult;
         if (input.OutputFileHandling == "original")
         {
-            if (isXliff1)
-            {
-                var xliff1String = Xliff1Serializer.Serialize(content);
-                streamResult = xliff1String.ToStream();
-            }
-            else
-            {
-                var targetContent = content.Target();
-                streamResult = targetContent.Serialize().ToStream();
-            }
+            var targetContentResult = content.Target();
+            if (!targetContentResult.Success) throw new PluginMisconfigurationException(targetContentResult.Error);
+            streamResult = targetContentResult.Value.ToStream();
         }
         else
         {
