@@ -34,11 +34,19 @@ public class TausClient : BlackBirdRestClient
             return new PluginApplicationException($"API response is empty or missing content. Status: {response.StatusCode}. Please verify the request and API availability.");
         }
 
-        var errorResponse = JsonConvert.DeserializeObject<ErrorResponse>(response.Content)!;
+        ErrorResponse? errorResponse;
+        try
+        {
+            errorResponse = JsonConvert.DeserializeObject<ErrorResponse>(response.Content);
+        }
+        catch (JsonException)
+        {
+            errorResponse = null;
+        }
 
         if (errorResponse == null)
         {
-            return new PluginApplicationException(response.ErrorException.Message);
+            return new PluginApplicationException($"Error with status {response.StatusCode}. Response content: {response.Content}");
         }
 
         var errors = errorResponse.Errors?.SelectMany(x => x.Values).ToList();
