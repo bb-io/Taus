@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Apps.Taus.Models.Estimate;
 
 public class EstimationRequestV2
@@ -5,6 +7,7 @@ public class EstimationRequestV2
     public Segment Source { get; set; }
     public Segment Target { get; set; }
     public string? Label { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public MetricRequest? Metric { get; set; }
     public ApeConfig? ApeConfig { get; set; }
 }
@@ -12,7 +15,8 @@ public class EstimationRequestV2
 public class MetricRequest
 {
     public string Uid { get; set; }
-    public string Version { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Version { get; set; }
 }
 
 public class ApeConfig

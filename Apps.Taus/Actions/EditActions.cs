@@ -6,6 +6,7 @@ using Apps.Taus.Models.Request;
 using Apps.Taus.Models.Response;
 using Apps.Taus.Models.TausApiResponseDtos;
 using Apps.Taus.Models.XliffBatch;
+using Apps.Taus.Services;
 using Apps.Taus.Services.SegmentProcessing;
 using Apps.Taus.Services.XliffBatch;
 using Blackbird.Applications.Sdk.Common;
@@ -36,6 +37,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     [Action("Edit", Description = "Edit translated content and output updated segments with quality metadata.")]
     public async Task<ContentEditResponse> EditContent([ActionParameter] EditContentRequest input)
     {
+        var metric = MetricSelectionHelper.Resolve(input.MetricUid, input.MetricVersion);
         var stream = await fileManagementClient.DownloadAsync(input.File);
         var loadResult = Transformation.Load(stream, input.File.Name, input.File.ContentType);
         if (!loadResult.Success) throw new PluginMisconfigurationException(loadResult.Error);
@@ -79,6 +81,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                     ApeLowThreshold = input.ApeLowThreshold ?? 0,
                     ApeThreshold = input.ApeThreshold ?? 1,
                     UseRag = input.UseRag,
+                    Metric = metric,
                 });
 
                 var estimationResult = await EstimateAction();
@@ -175,6 +178,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     [Action("Edit text", Description = "Edit translated text and output an improved target text.")]
     public async Task<EditTextOutput> EditText([ActionParameter] EditTextRequest input)
     {
+        var metric = MetricSelectionHelper.Resolve(input.MetricUid, input.MetricVersion);
         var response = await Estimate(new EstimateInput
         {
             Source = input.SourceText,
@@ -185,6 +189,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             ApeLowThreshold = input.ApeLowThreshold ?? 0,
             ApeThreshold = input.ApeThreshold ?? 1,
             UseRag = input.UseRag,
+            Metric = metric,
         });
 
         return new EditTextOutput(response, input.TargetText);
@@ -193,6 +198,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     [Action("Edit in background", Description = "Edit translated content in background jobs and output job IDs for later retrieval.")]
     public async Task<ContentEditInBackgroundResponse> EditContentInBackground([ActionParameter] EditContentInBackgroundRequest input)
     {
+        var metric = MetricSelectionHelper.Resolve(input.MetricUid, input.MetricVersion);
         var jobIds = new List<string>();
         var transformationFileRefs = new List<FileReference>();
         var jobCreationErrors = new List<string>();
@@ -203,7 +209,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
         {
             try
             {
-                var (jobId, transformation, totalSegmentsInFile, processedSegmentsInFile) = await CreateEditBackgroundJob(file, input);
+                var (jobId, transformation, totalSegmentsInFile, processedSegmentsInFile) = await CreateEditBackgroundJob(file, input, metric);
                 jobIds.Add(jobId);
                 transformationFileRefs.Add(transformation);
                 totalSegments += totalSegmentsInFile;
@@ -275,7 +281,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     }
     
      private async Task<(string jobId, FileReference transformationFileRef, int totalSegments, int processedSegments)> CreateEditBackgroundJob(
-        FileReference file, EditContentInBackgroundRequest input)
+        FileReference file, EditContentInBackgroundRequest input, MetricRequest? metric)
     {
         await using var stream = await fileManagementClient.DownloadAsync(file);
         using var reader = new StreamReader(stream);
@@ -314,6 +320,13 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             .AddParameter("source_language", sourceLanguage)
             .AddParameter("target_language", targetLanguage)
             .AddFile("file", () => xliffStream, Path.GetFileNameWithoutExtension(file.Name) + ".xliff", MediaTypes.Xliff2);
+
+        if (metric is not null)
+        {
+            batchRequest.AddParameter("metric_uid", metric.Uid);
+            if (metric.Version is not null)
+                batchRequest.AddParameter("metric_version", metric.Version);
+        }
 
         if (input.DisableApe != true)
             batchRequest.AddParameter("ape_threshold", input.Threshold.ToString(CultureInfo.InvariantCulture));
