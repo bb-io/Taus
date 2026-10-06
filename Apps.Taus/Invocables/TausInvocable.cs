@@ -39,6 +39,7 @@ public class TausInvocable : BaseInvocable
                     Language = FindTausLanguage(estimateInput.TargetLanguage)
                 },
                 Label = estimateInput.Label,
+                Metric = estimateInput.Metric,
                 ApeConfig = estimateInput.ApplyApe.HasValue && estimateInput.ApplyApe.Value ? new ApeConfig
                 {
                     Threshold = estimateInput.ApeThreshold ?? 1,
