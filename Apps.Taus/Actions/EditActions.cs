@@ -79,7 +79,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                     TargetLanguage = trgLanguage,
                     ApplyApe = true,
                     ApeLowThreshold = input.ApeLowThreshold ?? 0,
-                    ApeThreshold = input.ApeThreshold ?? 1,
+                    ApeThreshold = input.Threshold,
                     UseRag = input.UseRag,
                     Metric = metric,
                 });
