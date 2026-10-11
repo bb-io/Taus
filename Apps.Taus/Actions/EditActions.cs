@@ -138,7 +138,6 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             unit.Quality.ProfileReference = "https://api.taus.net/2.0/estimate";
             unit.Quality.ScoreThreshold = input.Threshold;
             unit.Quality.Score = unitScore / results.Count();
-            unit.Provenance.Review.Tool = "TAUS QE";
 
             if (localBilledWords > 0)
             {
