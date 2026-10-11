@@ -101,7 +101,6 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             float unitScore = 0;
             var localBilledCharacters = 0;
             var localBilledWords = 0;
-            var localApeUsed = false;
             foreach (var (segment, result) in results)
             {
                 billedCharacters += result.EstimateResult.BilledCharacters;
@@ -122,7 +121,6 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
                     segment.State = SegmentState.Final;
                     unit.Notes.Add(new Note(revision.Remarks) { Category = "epic-remark", Reference = segment.Id });
                     unitScore += result.ApeResult.Score;
-                    localApeUsed = true;
                 }
                 else if (score >= input.Threshold)
                 {
@@ -140,10 +138,12 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
             unit.Quality.ProfileReference = "https://api.taus.net/2.0/estimate";
             unit.Quality.ScoreThreshold = input.Threshold;
             unit.Quality.Score = unitScore / results.Count();
-            unit.Provenance.Review.Tool = localApeUsed ? "TAUS APE" : "TAUS QE";
+            unit.Provenance.Review.Tool = "TAUS QE";
+
             if (localBilledWords > 0)
             {
                 unit.AddUsage("TAUS APE", localBilledWords, UsageUnit.Words);
+                unit.Provenance.Translation.Tool = "TAUS APE";
             }
             if (localBilledCharacters > 0)
             {
