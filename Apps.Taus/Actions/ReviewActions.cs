@@ -24,7 +24,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
     [Action("Review", Description = "Review translated content and output quality scores for each segment.")]
     public async Task<ContentReviewResponse> EstimateContent([ActionParameter] ReviewContentRequest input)
     {
-        var metric = MetricSelectionHelper.Resolve(input.MetricUid, input.MetricVersion);
+        var metric = MetricSelectionHelper.Resolve(input.MetricUid);
         var stream = await fileManagementClient.DownloadAsync(input.File);
         var loadResult = Transformation.Load(stream, input.File.Name, input.File.ContentType);
         if (!loadResult.Success) throw new PluginMisconfigurationException(loadResult.Error);
@@ -145,7 +145,7 @@ public class ReviewActions(InvocationContext invocationContext, IFileManagementC
     [Action("Review text", Description = "Review translated text and output a quality score.")]
     public async Task<ReviewTextOutput> EstimateTextContent([ActionParameter] ReviewTextRequest input)
     {
-        var metric = MetricSelectionHelper.Resolve(input.MetricUid, input.MetricVersion);
+        var metric = MetricSelectionHelper.Resolve(input.MetricUid);
         var response = await Estimate(new EstimateInput
         {
             Source = input.SourceText,

@@ -37,7 +37,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     [Action("Edit", Description = "Edit translated content and output updated segments with quality metadata.")]
     public async Task<ContentEditResponse> EditContent([ActionParameter] EditContentRequest input)
     {
-        var metric = MetricSelectionHelper.Resolve(input.MetricUid, input.MetricVersion);
+        var metric = MetricSelectionHelper.Resolve(input.MetricUid);
         var stream = await fileManagementClient.DownloadAsync(input.File);
         var loadResult = Transformation.Load(stream, input.File.Name, input.File.ContentType);
         if (!loadResult.Success) throw new PluginMisconfigurationException(loadResult.Error);
@@ -180,7 +180,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     [Action("Edit text", Description = "Edit translated text and output an improved target text.")]
     public async Task<EditTextOutput> EditText([ActionParameter] EditTextRequest input)
     {
-        var metric = MetricSelectionHelper.Resolve(input.MetricUid, input.MetricVersion);
+        var metric = MetricSelectionHelper.Resolve(input.MetricUid);
         var response = await Estimate(new EstimateInput
         {
             Source = input.SourceText,
@@ -200,7 +200,7 @@ public class EditActions(InvocationContext invocationContext, IFileManagementCli
     [Action("Edit in background", Description = "Edit translated content in background jobs and output job IDs for later retrieval.")]
     public async Task<ContentEditInBackgroundResponse> EditContentInBackground([ActionParameter] EditContentInBackgroundRequest input)
     {
-        var metric = MetricSelectionHelper.Resolve(input.MetricUid, input.MetricVersion);
+        var metric = MetricSelectionHelper.Resolve(input.MetricUid);
         var jobIds = new List<string>();
         var transformationFileRefs = new List<FileReference>();
         var jobCreationErrors = new List<string>();

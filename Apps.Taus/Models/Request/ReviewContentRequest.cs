@@ -28,7 +28,7 @@ public class ReviewContentRequest : IReviewFileInput
     [Display("Output file handling", Description = "Determine the format of the output file. The default Blackbird behavior is to convert to XLIFF for future steps."), StaticDataSource(typeof(ProcessFileFormatHandler))]
     public string? OutputFileHandling { get; set; }
 
-    [Display("Metric UID",
+    [Display("Metric",
         Description = "Metric identifier, such as taus_qe, taus_qe_frca, taus_linguistic_qe, or a custom model UUID. Leave empty for automatic metric selection.")]
     [DataSource(typeof(ModelDataHandler))]
     public string? MetricUid { get; set; }

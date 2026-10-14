@@ -11,7 +11,7 @@ namespace Apps.Taus.DataSourceHandlers
         {
             var metrics = await GetMetrics();           
 
-            var items = metrics.Select(x => new DataSourceItem(x.Metric.Uid, $"{x.Metric.Name} ({x.Version})")) ?? [];
+            var items = metrics.Select(x => new DataSourceItem($"{x.Metric.Uid}-{x.Version}", $"{x.Metric.Name} ({x.Version})")) ?? [];
             if (!string.IsNullOrWhiteSpace(context.SearchString))
                 return items.Where(x => x.DisplayName.Contains(context.SearchString, StringComparison.OrdinalIgnoreCase));
 
