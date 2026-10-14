@@ -7,6 +7,11 @@ public static class MetricSelectionHelper
 {
     public static MetricRequest? Resolve(string? uidAndVersion)
     {
+        if (uidAndVersion is null)
+        {
+            return null;
+        }
+        
         var split = uidAndVersion.Split('-');
         if (split.Length != 2)
         {
