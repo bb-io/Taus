@@ -3,6 +3,7 @@ using Apps.Taus.Constants;
 using Apps.Taus.DataSourceHandlers;
 using Apps.Taus.Models.Estimate;
 using Apps.Taus.Models.Request;
+using Apps.Taus.Models.Response;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Exceptions;
@@ -21,6 +22,13 @@ public class TausInvocable : BaseInvocable
     public TausInvocable(InvocationContext invocationContext) : base(invocationContext)
     {
         Client = new(Creds);
+    }
+
+    protected async Task<List<MetricResponse>> GetMetrics()
+    {
+        var request = new TausRequest(ApiEndpoints.Metrics, Method.Get, Creds);
+        var response = await Client.ExecuteWithErrorHandling<List<MetricResponse>>(request);
+        return response;
     }
 
     protected async Task<EstimateOutput> Estimate([ActionParameter] EstimateInput estimateInput)
@@ -61,4 +69,20 @@ public class TausInvocable : BaseInvocable
             throw new PluginMisconfigurationException($"The language {language} is not compatible with the TAUS API.");
         return language!;
     }
+}
+
+public class MetricResponse
+{
+   public string Version {get; set;}
+   public bool isDefault {get; set;}
+   public string accessLevel {get; set;}
+   public Metric Metric {get;set;}
+}
+
+public class Metric
+{
+    public string Uid {get;set;}
+    public string Name {get;set;}
+    public string Type {get;set;}
+    public string Description {get;set;}
 }

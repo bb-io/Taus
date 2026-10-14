@@ -9,4 +9,5 @@ public static class ApiEndpoints
     public const string GetBatchJob = "/2.0/estimate-batch/job/{job_id}";
     public const string ListBatchJobs = "/2.0/estimate-batch/job/";
     public const string BatchJobDownload = "/2.0/estimate-batch/job/{job_id}/download";
+    public const string Metrics = "/2.0/metric";
 }

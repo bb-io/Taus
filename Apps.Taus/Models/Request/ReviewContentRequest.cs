@@ -1,6 +1,7 @@
 using Apps.Taus.DataSourceHandlers;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
+using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.SDK.Blueprints.Handlers;
 using Blackbird.Applications.SDK.Blueprints.Interfaces.Review;
@@ -27,11 +28,8 @@ public class ReviewContentRequest : IReviewFileInput
     [Display("Output file handling", Description = "Determine the format of the output file. The default Blackbird behavior is to convert to XLIFF for future steps."), StaticDataSource(typeof(ProcessFileFormatHandler))]
     public string? OutputFileHandling { get; set; }
 
-    [Display("Metric UID",
+    [Display("Metric",
         Description = "Metric identifier, such as taus_qe, taus_qe_frca, taus_linguistic_qe, or a custom model UUID. Leave empty for automatic metric selection.")]
+    [DataSource(typeof(ModelDataHandler))]
     public string? MetricUid { get; set; }
-
-    [Display("Metric version",
-        Description = "Version of the selected metric. Leave empty to use its latest version. Requires Metric UID.")]
-    public string? MetricVersion { get; set; }
 }
