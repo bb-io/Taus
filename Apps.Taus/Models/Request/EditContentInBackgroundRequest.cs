@@ -41,9 +41,6 @@ public class EditContentInBackgroundRequest
 
     [Display("Metric UID",
         Description = "Metric identifier, such as taus_qe, taus_qe_frca, taus_linguistic_qe, or a custom model UUID. Leave empty for automatic metric selection.")]
+    [DataSource(typeof(ModelDataHandler))]
     public string? MetricUid { get; set; }
-
-    [Display("Metric version",
-        Description = "Version of the selected metric. Leave empty to use its latest version. Requires Metric UID.")]
-    public string? MetricVersion { get; set; }
 }
